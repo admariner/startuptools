@@ -12,6 +12,7 @@ function OomModel(o) {
   m.minFlow = 40;
   m.maxFlow = 2100000;
   m.showInstructions = 1.0;
+  m.everDragged = false;
 
   m.nWeeks = 5 * 365.2425 / 7;
   m.calc();
@@ -92,8 +93,8 @@ OomModel.prototype.calc = function() {
 
 OomModel.prototype.animate = function(dt) {
   var m = this;
-  if (m.showInstructions > 0) {
-    m.showInstructions = Math.max(0, m.showInstructions - 0.3 * dt);
+  if (m.everDragged && m.showInstructions > 0) {
+    m.showInstructions = Math.max(0, m.showInstructions - 0.8 * dt);
     m.emit('changed');
   }
 };

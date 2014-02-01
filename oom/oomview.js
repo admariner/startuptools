@@ -252,7 +252,7 @@ function drawOom(m, ctx, hd, lo, o) {
   lo.plotR = lo.boxR - 60;
   lo.plotT = lo.boxT + 30;
   lo.plotB = lo.boxB - 30;
-  lo.dragRad = 7;
+  lo.dragRad = 6;
 
   lo.convWeekToX = function(week) {
     return (week / m.nWeeks) * (lo.plotR - lo.plotL) + lo.plotL;
@@ -267,6 +267,7 @@ function drawOom(m, ctx, hd, lo, o) {
     return Math.exp((y - lo.plotB) / (lo.plotT - lo.plotB) * (Math.log(m.maxFlow) - Math.log(m.minFlow)) + Math.log(m.minFlow));
   };
 
+  drawInstructions();
   drawAxes();
   drawCapital();
   drawExp();
@@ -275,7 +276,6 @@ function drawOom(m, ctx, hd, lo, o) {
   drawIpo();
   drawXLabels();
   drawYLabels();
-  drawInstructions();
 
   return;
 
@@ -415,6 +415,7 @@ function drawOom(m, ctx, hd, lo, o) {
         hd.dragging = function(dragX, dragY) {
           var newRev = lo.convYToFlow(dragY);
           m.setRev0(newRev);
+          m.everDragged = true;
         };
       },
       onHover: function() {
@@ -430,6 +431,7 @@ function drawOom(m, ctx, hd, lo, o) {
           var newWeek = lo.convXToWeek(dragX);
           var newRev = lo.convYToFlow(dragY);
           m.setRevN(newWeek, newRev);
+          m.everDragged = true;
         };
       }, 
       onHover: function() {
@@ -474,6 +476,7 @@ function drawOom(m, ctx, hd, lo, o) {
         hd.dragging = function(dragX, dragY) {
           var newExp = lo.convYToFlow(dragY);
           m.setExp0(newExp);
+          m.everDragged = true;
         };
       },
       onHover: function() {
@@ -489,6 +492,7 @@ function drawOom(m, ctx, hd, lo, o) {
           var newWeek = lo.convXToWeek(dragX);
           var newExp = lo.convYToFlow(dragY);
           m.setExpN(newWeek, newExp);
+          m.everDragged = true;
         };
       },
       onHover: function() {
@@ -587,11 +591,14 @@ function drawOom(m, ctx, hd, lo, o) {
     var lY = lo.plotT + 100;
 
     ctx.save();
-    ctx.globalAlpha = Math.min(1.0, m.showInstructions*2);
+    ctx.globalAlpha = (1 - Math.cos(m.showInstructions*Math.PI)) / 2;
 
     ctx.font = '25px Arial';
-    lines=['Drag the red and green handles to change expense and revenue',
-          'The shaded blue area shows how much money you\'ll need'];
+    lines=[
+      'Don\'t Run Out of Money',
+      'Drag the red and green handles to change expense and revenue',
+      'The shaded blue area shows how much money you\'ll need'
+    ];
     var linesW = 100;
     _.each(lines, function(line) { 
       linesW = Math.max(linesW, ctx.measureText(line).width);
