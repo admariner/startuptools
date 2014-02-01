@@ -590,7 +590,8 @@ function drawOom(m, ctx, hd, lo, o) {
     ctx.globalAlpha = Math.min(1.0, m.showInstructions*2);
 
     ctx.font = '25px Arial';
-    lines=['Drag the red and green handles to change expense and revenue'];
+    lines=['Drag the red and green handles to change expense and revenue',
+          'The shaded blue area shows how much money you\'ll need'];
     var linesW = 100;
     _.each(lines, function(line) { 
       linesW = Math.max(linesW, ctx.measureText(line).width);
