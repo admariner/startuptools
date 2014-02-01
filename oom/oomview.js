@@ -1,7 +1,7 @@
 
 var oommodel            = require('./oommodel');
 
-$.defPages('oom', 
+$.defPages('', 
           function(rest) {
             var rs = rest.split(',');
             return {
