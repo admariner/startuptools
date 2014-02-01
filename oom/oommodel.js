@@ -5,17 +5,19 @@ exports.OomModel = OomModel;
 function OomModel(o) {
   var m = this;
   m.rev0 = o.rev0 ? o.rev0 : 200;
-  m.revGrowth = o.revGrowth ? o.revGrowth : 0.03;
-  m.exp0 = o.exp0 ? o.exp0 : 2000;
+  m.revGrowth = o.revGrowth ? o.revGrowth : 0.02;
+  m.exp0 = o.exp0 ? o.exp0 : 1600;
   m.expGrowth = 0.0;
 
-  m.minFlow = 90;
-  m.maxFlow = 1050000;
+  m.minFlow = 40;
+  m.maxFlow = 2100000;
+  m.showInstructions = 1.0;
 
-  m.nWeeks = 52*3;
+  m.nWeeks = 5 * 365.2425 / 7;
   m.calc();
 }
 OomModel.prototype = Object.create(EventEmitter.prototype);
+
 
 
 OomModel.prototype.setRev0 = function(rev0) {
@@ -82,9 +84,17 @@ OomModel.prototype.calc = function() {
   m.breakevenTotRev = m.rev0 * (m.revLogGrowth === 0 ? m.breakevenWeek : ((Math.exp(m.revLogGrowth * m.breakevenWeek) - 1) / m.revLogGrowth));
   m.breakevenTotExp = m.exp0 * (m.expLogGrowth === 0 ? m.breakevenWeek : ((Math.exp(m.expLogGrowth * m.breakevenWeek) - 1) / m.expLogGrowth));
   m.capitalNeeded = m.breakevenTotExp - m.breakevenTotRev;
+
+  // when will we make 100M / yr?
+  m.ipoWeek = (Math.log(1e8/52) - m.rev0Log) / m.revLogGrowth;
 };
 
 
 OomModel.prototype.animate = function(dt) {
+  var m = this;
+  if (m.showInstructions > 0) {
+    m.showInstructions = Math.max(0, m.showInstructions - 0.3 * dt);
+    m.emit('changed');
+  }
 };
 

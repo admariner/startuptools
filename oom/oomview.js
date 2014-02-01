@@ -3,7 +3,8 @@ var oommodel            = require('./oommodel');
 
 $.defPages('', 
           function(rest) {
-            var rs = rest.split(',');
+            var rs = rest.split('_');
+            console.log('Parse', rs);
             return {
               rev0: rs[0] ? parseFloat(rs[0]) : undefined,
               exp0: rs[1] ? parseFloat(rs[1]) : undefined,
@@ -30,6 +31,10 @@ $.defPages('',
             $(top).children().first().bogartWindowEvents({
               'resize': onWindowResize,
               'keydown': onWindowKeydown
+            });
+
+            m.on('changed', function() {
+              top.setHash('_' + m.rev0.toFixed(1) + '_' + m.exp0.toFixed(1) + '_' + m.revGrowth.toFixed(4) + '_' + m.expGrowth.toFixed(4));
             });
 
             getSizes();
@@ -80,114 +85,8 @@ $.defPages('',
 
 $.fn.fmtOomCanvas = function(m) {
   var top = this;
-  var canvas = top[0];
-  var hd = new HitDetector(); // Persistent
-
-  top.on('mousedown', function(ev) {
-    var mdX = ev.offsetX;
-    var mdY = ev.offsetY;
-    var action = hd.find(mdX, mdY);
-    if (action) {
-      hd.buttonDown = true;
-      if (action.onDown) {
-        action.onDown(hd, mdX, mdY);
-      }
-    }
-    m.emit('changed');
-    return false;
-  });
-
-  top.on('mousemove', function(ev) {
-    var mdX = ev.offsetX;
-    var mdY = ev.offsetY;
-    var action = hd.find(mdX, mdY);
-    if (hd.buttonDown || action || hd.hoverActive) {
-      hd.mdX = mdX;
-      hd.mdY = mdY;
-      if (hd.dragging) {
-        hd.dragging(mdX, mdY);
-      }
-      m.emit('changed');
-    }
-  });
-  
-  top.on('mouseup', function(ev) {
-    hd.mdX = hd.mdY = null;
-    hd.buttonDown = false;
-    hd.dragging = null;
-    var mdX = ev.offsetX;
-    var mdY = ev.offsetY;
-    var action = hd.find(mdX, mdY);
-    if (action && action.onUp) {
-      action.onUp();
-    }
-    m.emit('changed');
-    return false;
-  });
-
-  m.on('animate', function() {
-    var t0 = Date.now();
-    var ctx = canvas.getContext('2d');
-    var pixelRatio = canvas.pixelRatio;
-    ctx.save();
-    ctx.scale(pixelRatio, pixelRatio); // setTransform(canvas.pixelRatio, 0, 0, 0, canvas.pixelRatio, 0);
-    ctx.textLayer = mkDeferQ();
-    ctx.buttonLayer = mkDeferQ();
-    ctx.cursorLayer = mkDeferQ();
-    hd.beginDrawing(ctx);
-    var cw = canvas.width / pixelRatio;
-    var ch = canvas.height / pixelRatio;
-    var lo = {boxL: 0, boxT: 0, boxR: cw, boxB: ch, 
-              px: 1, 
-              snap: function(x) { return Math.round(x * pixelRatio) / pixelRatio; },
-              snap5: function(x) { return (Math.round(x * pixelRatio - 0.5) + 0.5) / pixelRatio; },
-              thinWidth: 1 / pixelRatio
-             };
-
-    ctx.clearRect(0, 0, cw, ch);
-    ctx.lineWidth = 1.0;
-    ctx.strokeStyle = '#000000';
-    ctx.fillStyle = '#000000';
-
-    drawOom(m, ctx, hd, lo, {});
-
-    ctx.textLayer.now();
-    ctx.buttonLayer.now();
-    ctx.cursorLayer.now();
-    ctx.textLayer = ctx.buttonLayer = ctx.cursorLayer = undefined; // GC paranoia
-
-    hd.endDrawing();
-    ctx.restore();
-  });
+  top.mkAnimatedCanvas(m, drawOom, {});
 }
-
-$.fn.fmtOomEditor = function(v) {
-  this.html('<p class="oomPanelTitle">Startup Growth</p>' +
-            '<form>' +
-            '<table class="oomEditorTable">' +
-            '<tr><td>Initial Cash</td><td>$<input name="cash0" type=text size=7></td></tr>' +
-            '<tr><td>Weekly Expenses</td><td>$<input name="expense" type=text size=6></td></tr>' +
-            '<tr><td>Weekly Revenue</td><td>$<input name="revenue0" type=text size=6></td></tr>' +
-            '<tr><td>Weekly Growth Rate</td><td><input name="growth" type=text size=3>%</td></tr>' +
-            '</table></form>');
-  this.find('[name=cash0]').val(v.m.cash0.toString()).on('change', function(ev) {
-    v.m.cash0 = parseFloat($(this).val());
-    v.m.setup();
-  });
-  this.find('[name=expense]').val(v.m.expense).on('change', function(ev) {
-    v.m.expense = parseFloat($(this).val());
-    v.m.setup();
-  });
-  this.find('[name=revenue0]').val(v.m.revenue0).on('change', function(ev) {
-    v.m.revenue0 = parseFloat($(this).val());
-    v.m.setup();
-  });
-  this.find('[name=growth]').val(v.m.growth * 100).on('change', function(ev) {
-    v.m.growth = parseFloat($(this).val() / 100);
-    v.m.setup();
-  });
-};
-
 
 $.fn.fmtOomFooter = function(o) {
   this.html('<center>' +
@@ -200,17 +99,52 @@ function fmtWeek(week) {
   return 'week ' + week.toFixed(0);
 }
 
-function fmtMoney(v, prec) {
-  if (v >= 1000000000*prec) {
-    return '$' + (v/1000000).toFixed(0) + 'B';
+function fmtYear(week) {
+  return 'year ' + (week / weeksPerYear).toFixed(1);
+}
+
+
+function fmtMoney(v, digits) {
+  var powDigits = Math.pow(10, digits);
+  if (v >= 100e12) { // Don't show silly numbers
+    return 'Unreasonable';
   }
-  if (v >= 1000000*prec) {
+  if (v >= 1000000000000*powDigits) {
+    return '$' + (v/1000000000000).toFixed(0) + 'T';
+  }
+  if (v >= 1000000000000) {
+    return '$' + (v/1000000000000).toFixed(digits-1) + 'T';
+  }
+  if (v >= 1000000000*powDigits) {
+    return '$' + (v/1000000000).toFixed(0) + 'B';
+  }
+  if (v >= 1000000000) {
+    return '$' + (v/1000000000).toFixed(digits-1) + 'B';
+  }
+  if (v >= 1000000*powDigits) {
     return '$' + (v/1000000).toFixed(0) + 'M';
   }
-  if (v >= 1000*prec) {
+  if (v >= 1000000) {
+    return '$' + (v/1000000).toFixed(digits-1) + 'M';
+  }
+  if (v >= 1000*powDigits) {
     return '$' + (v/1000).toFixed(0) + 'k';
   }
+  if (v >= 1000) {
+    return '$' + (v/1000).toFixed(digits-1) + 'k';
+  }
   return '$' + v.toFixed(0);
+}
+
+var weeksPerYear = 365.2425 / 7;
+var weeksPerMonth = 365.2425 / 7 / 12;
+
+function weekToMonth(week) {
+  return week / weeksPerMonth;
+}
+
+function weekToMonthGrowth(weeklyGrowth) {
+  return Math.exp(Math.log(1+weeklyGrowth) * weeksPerMonth)-1;
 }
 
 function fmtGrowth(v) {
@@ -267,6 +201,18 @@ function mkShinyPattern(ctx, butL, butT, butR, butB, loCol, hiCol) {
   pat.addColorStop(0.875, '#e5e5e5');
   pat.addColorStop(1.000, '#e5e5e5');
   return pat;
+}
+
+function drawRountangle(ctx, l, t, r, b, rad) {
+  ctx.moveTo(l+rad, t);
+  ctx.lineTo(r-rad, t);
+  ctx.arc(r-rad, t+rad, rad, -Math.PI/2, 0);
+  ctx.lineTo(r, b-rad);
+  ctx.arc(r-rad, b-rad, rad, 0, Math.PI/2);
+  ctx.lineTo(l+rad, b);
+  ctx.arc(l+rad, b-rad, rad, Math.PI/2, Math.PI);
+  ctx.lineTo(l, t+rad);
+  ctx.arc(l+rad, t+rad, rad, Math.PI, Math.PI*3/2);
 }
 
 function drawDragHandle(ctx, cX, cY, radius, style) {
@@ -326,8 +272,10 @@ function drawOom(m, ctx, hd, lo, o) {
   drawExp();
   drawRev();
   drawBreakeven();
+  drawIpo();
   drawXLabels();
   drawYLabels();
+  drawInstructions();
 
   return;
 
@@ -346,8 +294,7 @@ function drawOom(m, ctx, hd, lo, o) {
 
   function drawXLabels() {
     ctx.font = '12px Arial';
-    _.each([0, 1, 2, 3], function(year) {
-      var week = year * 52;
+    for (var week=0, year=0; week <= m.nWeeks; week+=365.2425/7, year += 1) {
       var label = 'year ' + year.toString();
       var weekX = lo.convWeekToX(week);
 
@@ -361,12 +308,13 @@ function drawOom(m, ctx, hd, lo, o) {
       ctx.textAlign = 'center';
       ctx.textBaseline = 'top';
       ctx.fillText(label, weekX, lo.plotB + 10);
-    });
+    }
   }
 
   function drawYLabels() {
     ctx.font = '12px Arial';
     _.each([1,2,5], function(flow) {
+      while (flow < m.minFlow) flow *= 10;
       while (flow <= m.maxFlow) {
         var label = fmtMoney(flow, 1);
         var flowY = lo.convFlowToY(flow);
@@ -417,13 +365,14 @@ function drawOom(m, ctx, hd, lo, o) {
       ctx.fillStyle = '#eeeeff';
       ctx.fill();
     }
+    ctx.font = '15px Arial';
+    var label = m.capitalNeeded > 0 ? (fmtMoney(m.capitalNeeded, 2) + ' capital needed') : 'Infinite capital needed';
+    var labelW = ctx.measureText(label).width;
     var lbWeek = m.breakevenWeek > 0 ? Math.min(20, m.breakevenWeek / 4) : 20;
-    var lbX = lo.convWeekToX(lbWeek);
+    var lbX = Math.max(lo.plotL + labelW/2, lo.convWeekToX(lbWeek));
     var lbY = (lo.convFlowToY(m.revAtWeek(lbWeek)) + lo.convFlowToY(m.expAtWeek(lbWeek))) / 2;
-    var label = m.capitalNeeded > 0 ? (fmtMoney(m.capitalNeeded, 10) + ' capital needed') : 'Infinite capital needed';
 
     ctx.fillStyle = '#000000';
-    ctx.font = '15px Arial';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(label, lbX, lbY);
@@ -432,8 +381,9 @@ function drawOom(m, ctx, hd, lo, o) {
   function drawRev() {
     var p0X = lo.convWeekToX(0);
     var p0Y = lo.convFlowToY(m.rev0);
-    var p1X = lo.convWeekToX(m.nWeeks);
-    var p1Y = lo.convFlowToY(m.revN);
+    var p1Week = Math.min(m.nWeeks, m.ipoWeek);
+    var p1X = lo.convWeekToX(p1Week);
+    var p1Y = lo.convFlowToY(m.revAtWeek(p1Week));
     
     ctx.beginPath();
     ctx.moveTo(p0X, p0Y);
@@ -445,44 +395,54 @@ function drawOom(m, ctx, hd, lo, o) {
     ctx.save();
     ctx.translate(p0X, p0Y);
     ctx.rotate(Math.atan2(p1Y-p0Y, p1X-p0X));
-    var label = fmtMoney(m.rev0, 10) + ' revenue, growing ' + fmtGrowth(m.revGrowth) + ' weekly';
+    var labels = [fmtMoney(m.rev0, 2) + ' weekly growing ' + fmtGrowth(m.revGrowth),
+                  fmtMoney(m.rev0 * weeksPerMonth, 2) + ' monthly growing ' + fmtGrowth(weekToMonthGrowth(m.revGrowth))];
+
     ctx.fillStyle = '#000000';
     ctx.font = '15px Arial';
     ctx.textAlign = 'left';
     ctx.textBaseline = 'top';
-    ctx.fillText(label, 20, +4);
+    _.each(labels, function(label, labeli) {
+      ctx.fillText(label, 20, +4 + 18*labeli);
+    });
     ctx.restore();
 
-    hd.add(p0X-lo.dragRad, p0Y-lo.dragRad, p0X+lo.dragRad, p0Y+lo.dragRad, function() {
-      drawDragHandle(ctx, p0X, p0Y, lo.dragRad, 'rev');
-    }, {onDown: function(hd, mdX, mdY) {
-      hd.dragging = function(dragX, dragY) {
-        var newRev = lo.convYToFlow(dragY);
-        m.setRev0(newRev);
-      };
-    }}, function() {
-      drawTooltip(ctx, lo, p0X, p0Y, 'Drag to change initial weekly revense');
-    });
+    hd.add(p0X-lo.dragRad, p0Y-lo.dragRad, p0X+lo.dragRad, p0Y+lo.dragRad, {
+      draw: function() {
+        drawDragHandle(ctx, p0X, p0Y, lo.dragRad, 'rev');
+      },
+      onDown: function(mdX, mdY) {
+        hd.dragging = function(dragX, dragY) {
+          var newRev = lo.convYToFlow(dragY);
+          m.setRev0(newRev);
+        };
+      },
+      onHover: function() {
+        drawTooltip(ctx, lo, p0X, p0Y, 'Drag to change initial weekly revense');
+      }});
 
-    hd.add(p1X-lo.dragRad, p1Y-lo.dragRad, p1X+lo.dragRad, p1Y+lo.dragRad, function() {
-      drawDragHandle(ctx, p1X, p1Y, lo.dragRad, 'rev');
-    }, {onDown: function(hd, mdX, mdY) {
-      hd.dragging = function(dragX, dragY) {
-        var newWeek = lo.convXToWeek(dragX);
-        var newRev = lo.convYToFlow(dragY);
-        m.setRevN(newWeek, newRev);
-      };
-    }}, function() {
-      drawTooltip(ctx, lo, p1X, p1Y, 'Drag to change weekly revense growth rate');
-    });
-
+    hd.add(p1X-lo.dragRad, p1Y-lo.dragRad, p1X+lo.dragRad, p1Y+lo.dragRad, {
+      draw: function() {
+        drawDragHandle(ctx, p1X, p1Y, lo.dragRad, 'rev');
+      }, 
+      onDown: function(mdX, mdY) {
+        hd.dragging = function(dragX, dragY) {
+          var newWeek = lo.convXToWeek(dragX);
+          var newRev = lo.convYToFlow(dragY);
+          m.setRevN(newWeek, newRev);
+        };
+      }, 
+      onHover: function() {
+        drawTooltip(ctx, lo, p1X, p1Y, 'Drag to change weekly revense growth rate');
+      }});
   }
 
   function drawExp() {
     var p0X = lo.convWeekToX(0);
     var p0Y = lo.convFlowToY(m.exp0);
-    var p1X = lo.convWeekToX(m.nWeeks);
-    var p1Y = lo.convFlowToY(m.expN);
+    var p1Week = m.nWeeks;
+    var p1X = lo.convWeekToX(p1Week);
+    var p1Y = lo.convFlowToY(m.expAtWeek(p1Week));
     
     ctx.beginPath();
     ctx.moveTo(p0X, p0Y);
@@ -494,61 +454,159 @@ function drawOom(m, ctx, hd, lo, o) {
     ctx.save();
     ctx.translate(p0X, p0Y);
     ctx.rotate(Math.atan2(p1Y-p0Y, p1X-p0X));
-    var label = fmtMoney(m.exp0, 10) + ' expense, growing ' + fmtGrowth(m.expGrowth) + ' weekly';
+
+    var labels = [fmtMoney(m.exp0, 2) + ' weekly growing ' + fmtGrowth(m.expGrowth),
+                  fmtMoney(m.exp0 * weeksPerMonth, 2) + ' monthly growing ' + fmtGrowth(weekToMonthGrowth(m.expGrowth))];
     ctx.fillStyle = '#000000';
     ctx.font = '15px Arial';
     ctx.textAlign = 'left';
     ctx.textBaseline = 'bottom';
-    ctx.fillText(label, 20, -4);
+    _.each(labels, function(label, labeli) {
+      ctx.fillText(label, 20, -4 - 18*(1-labeli));
+    });
     ctx.restore();
 
-    hd.add(p0X-lo.dragRad, p0Y-lo.dragRad, p0X+lo.dragRad, p0Y+lo.dragRad, function() {
-      drawDragHandle(ctx, p0X, p0Y, lo.dragRad, 'exp');
-    }, {onDown: function(hd, mdX, mdY) {
-      hd.dragging = function(dragX, dragY) {
-        var newExp = lo.convYToFlow(dragY);
-        m.setExp0(newExp);
-      };
-    }}, function() {
-      drawTooltip(ctx, lo, p0X, p0Y, 'Drag to change initial weekly expense');
-    });
+    hd.add(p0X-lo.dragRad, p0Y-lo.dragRad, p0X+lo.dragRad, p0Y+lo.dragRad, {
+      draw: function() {
+        drawDragHandle(ctx, p0X, p0Y, lo.dragRad, 'exp');
+      },
+      onDown: function(mdX, mdY) {
+        hd.dragging = function(dragX, dragY) {
+          var newExp = lo.convYToFlow(dragY);
+          m.setExp0(newExp);
+        };
+      },
+      onHover: function() {
+        drawTooltip(ctx, lo, p0X, p0Y, 'Drag to change initial weekly expense');
+      }});
 
-    hd.add(p1X-lo.dragRad, p1Y-lo.dragRad, p1X+lo.dragRad, p1Y+lo.dragRad, function() {
-      drawDragHandle(ctx, p1X, p1Y, lo.dragRad, 'exp');
-    }, {onDown: function(hd, mdX, mdY) {
-      hd.dragging = function(dragX, dragY) {
-        var newWeek = lo.convXToWeek(dragX);
-        var newExp = lo.convYToFlow(dragY);
-        m.setExpN(newWeek, newExp);
-      };
-    }}, function() {
-      drawTooltip(ctx, lo, p1X, p1Y, 'Drag to change weekly expense growth rate');
-    });
+    hd.add(p1X-lo.dragRad, p1Y-lo.dragRad, p1X+lo.dragRad, p1Y+lo.dragRad, {
+      draw: function() {
+        drawDragHandle(ctx, p1X, p1Y, lo.dragRad, 'exp');
+      },
+      onDown: function(mdX, mdY) {
+        hd.dragging = function(dragX, dragY) {
+          var newWeek = lo.convXToWeek(dragX);
+          var newExp = lo.convYToFlow(dragY);
+          m.setExpN(newWeek, newExp);
+        };
+      },
+      onHover: function() {
+        drawTooltip(ctx, lo, p1X, p1Y, 'Drag to change weekly expense growth rate');
+      }});
   }
 
   function drawBreakeven() {
-    var p0X = lo.convWeekToX(m.breakevenWeek);
-    var p0Y = lo.convFlowToY(m.breakevenFlow);
-    var label = 'Breakeven in week ' + m.breakevenWeek.toFixed(0);
+    if (m.breakevenWeek < 0 || m.breakevenWeek > 30*52) return;
+
+    var label = 'Breakeven at ' + fmtYear(m.breakevenWeek);
+    var drawArrow = lo.convWeekToX(m.breakevenWeek) > lo.plotR;
+    
+    if (drawArrow) {
+      var p0X = lo.plotR;
+      var p0Y = lo.convFlowToY(m.breakevenFlow);
+      var p1X = lo.plotR-20;
+      var p1Y = Math.min(p0Y, lo.convFlowToY(m.expN)-10);
+    
+      ctx.moveTo(p0X, p0Y);
+      ctx.lineTo(p1X, p1Y);
+      ctx.moveTo(p0X, p0Y);
+      ctx.lineTo(p0X-8, p0Y-3);
+      ctx.moveTo(p0X, p0Y);
+      ctx.lineTo(p0X-8, p0Y+3);
+      ctx.strokeStyle = '#888888';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+
+      ctx.fillStyle = '#000000';
+      ctx.font = '15px Arial';
+      var labelW = ctx.measureText(label).width
+
+      ctx.textBaseline = 'middle';
+      ctx.textAlign = 'right';
+      ctx.fillText(label, p1X-5, p1Y);
+    } else {
+      var p0X = lo.convWeekToX(m.breakevenWeek);
+      var p0Y = lo.convFlowToY(m.breakevenFlow);
+      var p1X = lo.convWeekToX(m.breakevenWeek);
+      var p1Y = p0Y+20;
+      
+      ctx.moveTo(p0X, p0Y);
+      ctx.lineTo(p1X, p1Y);
+      ctx.strokeStyle = '#888888';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+
+      ctx.fillStyle = '#000000';
+      ctx.font = '15px Arial';
+      var labelW = ctx.measureText(label).width
+      if (p1X + labelW + 10 > lo.plotR) {
+        ctx.textBaseline = 'top';
+        ctx.textAlign = 'right';
+        ctx.fillText(label, p1X+3, p1Y);
+      } else {
+        ctx.textBaseline = 'top';
+        ctx.textAlign = 'left';
+        ctx.fillText(label, p1X-3, p1Y);
+      }
+    }
+  }
+
+  function drawIpo() {
+    if (m.ipoWeek < 0 || m.ipoWeek > 30*52) return;
+
+    var drawArrow = lo.convWeekToX(m.ipoWeek) > lo.plotR;
+    var p0X = drawArrow ? lo.plotR : lo.convWeekToX(m.ipoWeek);
+    var p0Y = lo.convFlowToY(m.revAtWeek(m.ipoWeek));
+    var label = '$100M revenue at ' + fmtYear(m.ipoWeek);
+    var p1X = Math.min(lo.plotR-20, p0X-20);
+    var p1Y = p0Y;
     
     ctx.moveTo(p0X, p0Y);
-    ctx.lineTo(p0X, lo.plotB);
+    ctx.lineTo(p1X, p1Y);
+    if (drawArrow) {
+      ctx.moveTo(p0X, p0Y);
+      ctx.lineTo(p0X-8, p0Y-3);
+      ctx.moveTo(p0X, p0Y);
+      ctx.lineTo(p0X-8, p0Y+3);
+    }
     ctx.strokeStyle = '#888888';
-    ctx.lineWidth = lo.thinWidth;
+    ctx.lineWidth = 1;
     ctx.stroke();
 
     ctx.fillStyle = '#000000';
     ctx.font = '15px Arial';
-    ctx.textAlign = 'left';
-    ctx.textBaseline = 'bottom';
-    ctx.fillText(label, p0X+5, p0Y+40);
-    
+    ctx.textBaseline = 'middle';
+    ctx.textAlign = 'right';
+    ctx.fillText(label, p1X-5, p1Y);
   }
 
-  function drawTitle(title, y) {
-    ctx.font = 'bold 12px Arial';
-    ctx.textAlign = 'left';
+  function drawInstructions() {
+    if (!(m.showInstructions > 0)) return;
+    var cX = (lo.plotL + lo.plotR)/2;
+    var lY = lo.plotT + 100;
+
+    ctx.save();
+    ctx.globalAlpha = Math.min(1.0, m.showInstructions*2);
+
+    ctx.font = '25px Arial';
+    lines=['Drag the red and green handles to change expense and revenue'];
+    var linesW = 100;
+    _.each(lines, function(line) { 
+      linesW = Math.max(linesW, ctx.measureText(line).width);
+    });
+
+    drawRountangle(ctx, cX-linesW/2-20, lY-30, cX+linesW/2+20, lY+(lines.length-1)*35+30, 10);
+    ctx.fillStyle = '#ffcc66';
+    ctx.fill();
+
+    ctx.fillStyle = '#000000';
     ctx.textBaseline = 'middle';
-    ctx.fillText(title, xStart+5, y);
+    ctx.textAlign = 'center';
+    _.each(lines, function(line, linei) {
+      ctx.fillText(line, cX, lY + linei*35);
+    });
+
+    ctx.restore();
   }
 }
