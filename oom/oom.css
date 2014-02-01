@@ -1,0 +1,21 @@
+.oomView {
+    vertical-align: top;
+}
+.oomFooter {
+    height: 40px;
+}
+
+.oomVisPanel {
+    display: inline-block;
+    margin: 0 10px 0 10px;
+}
+.oomPanelTitle {
+    margin: 0px;
+    font-weight: bold;
+}
+.oomEditorTable td {
+    padding: 5px;
+}
+
+.oomCanvas {
+}

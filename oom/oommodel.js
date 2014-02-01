@@ -9,12 +9,14 @@ function OomModel(o) {
   m.exp0 = o.exp0 ? o.exp0 : 2000;
   m.expGrowth = 0.0;
 
-  m.maxFlow = 1e5;
+  m.minFlow = 90;
+  m.maxFlow = 1050000;
 
   m.nWeeks = 52*3;
   m.calc();
 }
 OomModel.prototype = Object.create(EventEmitter.prototype);
+
 
 OomModel.prototype.setRev0 = function(rev0) {
   var m = this;
@@ -28,24 +30,34 @@ OomModel.prototype.setExp0 = function(exp0) {
   m.calc();
 };
 
-OomModel.prototype.setRevN = function(revN) {
+OomModel.prototype.setRevN = function(week, revN) {
   var m = this;
-  m.revGrowth = Math.exp(Math.log(revN / m.rev0) / m.nWeeks) - 1;
+  m.revGrowth = Math.exp(Math.log(revN / m.rev0) / week) - 1;
   m.calc();
 };
 
-OomModel.prototype.setExpN = function(expN) {
+OomModel.prototype.setExpN = function(week, expN) {
   var m = this;
 
-  m.expGrowth = Math.exp(Math.log(expN / m.exp0) / m.nWeeks) - 1;
+  m.expGrowth = Math.exp(Math.log(expN / m.exp0) / week) - 1;
   m.calc();
+};
+
+OomModel.prototype.revAtWeek = function(week) {
+  var m = this;
+
+  return Math.exp(m.rev0Log + m.revLogGrowth * week);
+};
+
+OomModel.prototype.expAtWeek = function(week) {
+  var m = this;
+
+  return Math.exp(m.exp0Log + m.expLogGrowth * week);
 };
 
 OomModel.prototype.calc = function() {
   var m = this;
-  m.revN = m.rev0 * Math.pow(m.revGrowth, m.nWeeks);
-  m.expN = m.exp0 * Math.pow(m.expGrowth, m.nWeeks);
-  
+
   m.rev0Log = Math.log(m.rev0);
   m.exp0Log = Math.log(m.exp0);
   m.revLogGrowth = Math.log(1 + m.revGrowth);
@@ -62,7 +74,17 @@ OomModel.prototype.calc = function() {
     n = (exp0Log - rev0Log) / (revLogGrowth - expLogGrowth)
   */
   m.breakevenWeek = (m.exp0Log - m.rev0Log) / (m.revLogGrowth - m.expLogGrowth);
-  m.revExpBreakeven = Math.exp(m.rev0Log + m.revLogGrowth * m.breakevenWeek);
+  m.breakevenFlow = Math.exp(m.rev0Log + m.revLogGrowth * m.breakevenWeek);
 
-
+  /*
+    Integrate revenue from 0 to breakeven
+  */
+  m.breakevenTotRev = m.rev0 * (m.revLogGrowth === 0 ? m.breakevenWeek : ((Math.exp(m.revLogGrowth * m.breakevenWeek) - 1) / m.revLogGrowth));
+  m.breakevenTotExp = m.exp0 * (m.expLogGrowth === 0 ? m.breakevenWeek : ((Math.exp(m.expLogGrowth * m.breakevenWeek) - 1) / m.expLogGrowth));
+  m.capitalNeeded = m.breakevenTotExp - m.breakevenTotRev;
 };
+
+
+OomModel.prototype.animate = function(dt) {
+};
+
