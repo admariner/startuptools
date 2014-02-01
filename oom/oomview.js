@@ -304,7 +304,7 @@ function drawOom(m, ctx, hd, lo, o) {
 
   lo.plotL = lo.boxL + 60;
   lo.plotR = lo.boxR - 60;
-  lo.plotT = lo.boxT + 20;
+  lo.plotT = lo.boxT + 30;
   lo.plotB = lo.boxB - 30;
   lo.dragRad = 7;
 
@@ -394,6 +394,11 @@ function drawOom(m, ctx, hd, lo, o) {
         flow *= 10;
       }
     });
+
+    ctx.font = 'bold 12px Arial';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+    ctx.fillText('Weekly revenue/expense', lo.boxL, lo.boxT);
   }
 
   function drawCapital() {
