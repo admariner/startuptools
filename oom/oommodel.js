@@ -26,7 +26,10 @@ function OomModel(o) {
 OomModel.prototype = Object.create(EventEmitter.prototype);
 
 
-
+/*
+  Set revenue/expense at a given time. Supports dragging sliders in the UI.
+  If week is zero, change the initial value, otherwise change growth
+*/
 OomModel.prototype.setRevAtWeek = function(week, rev) {
   var m = this;
   if (week === 0) {
@@ -36,7 +39,6 @@ OomModel.prototype.setRevAtWeek = function(week, rev) {
   }
   m.calc();
 };
-
 OomModel.prototype.setExpAtWeek = function(week, exp) {
   var m = this;
   if (week === 0) {
@@ -47,18 +49,31 @@ OomModel.prototype.setExpAtWeek = function(week, exp) {
   m.calc();
 };
 
+/*
+  Return revenue/expense at a given week
+*/
 OomModel.prototype.revAtWeek = function(week) {
   var m = this;
-
   return Math.exp(m.rev0Log + m.revLogGrowth * week);
 };
-
 OomModel.prototype.expAtWeek = function(week) {
   var m = this;
-
   return Math.exp(m.exp0Log + m.expLogGrowth * week);
 };
 
+/*
+  Evolve the model forward/backward in time by the given number of weeks.
+*/
+OomModel.prototype.evolve = function(weeks) {
+  var m = this;
+  m.exp0 *= Math.exp(m.expLogGrowth * weeks);
+  m.rev0 *= Math.exp(m.revLogGrowth * weeks);
+  m.calc();
+};
+
+/*
+  Calculate all derived properties
+*/
 OomModel.prototype.calc = function() {
   var m = this;
 
@@ -77,21 +92,33 @@ OomModel.prototype.calc = function() {
     solve for exp(rev0Log + n*revLogGrowth) === exp(exp0Log + n*expLogGrowth);
     n = (exp0Log - rev0Log) / (revLogGrowth - expLogGrowth)
   */
-  m.breakevenWeek = (m.exp0Log - m.rev0Log) / (m.revLogGrowth - m.expLogGrowth);
-  m.breakevenFlow = Math.exp(m.rev0Log + m.revLogGrowth * m.breakevenWeek);
+  if (m.exp0Log > m.rev0Log) {
+    m.breakevenWeek = (m.exp0Log - m.rev0Log) / (m.revLogGrowth - m.expLogGrowth);
+    m.breakevenFlow = Math.exp(m.rev0Log + m.revLogGrowth * m.breakevenWeek);
 
-  /*
-    Integrate revenue from 0 to breakeven
-  */
-  m.breakevenTotRev = m.rev0 * (m.revLogGrowth === 0 ? m.breakevenWeek : ((Math.exp(m.revLogGrowth * m.breakevenWeek) - 1) / m.revLogGrowth));
-  m.breakevenTotExp = m.exp0 * (m.expLogGrowth === 0 ? m.breakevenWeek : ((Math.exp(m.expLogGrowth * m.breakevenWeek) - 1) / m.expLogGrowth));
-  m.capitalNeeded = m.breakevenTotExp - m.breakevenTotRev;
+    /*
+      Integrate revenue from 0 to breakeven
+    */
+    m.breakevenTotRev = m.rev0 * (m.revLogGrowth === 0 ? m.breakevenWeek : ((Math.exp(m.revLogGrowth * m.breakevenWeek) - 1) / m.revLogGrowth));
+    m.breakevenTotExp = m.exp0 * (m.expLogGrowth === 0 ? m.breakevenWeek : ((Math.exp(m.expLogGrowth * m.breakevenWeek) - 1) / m.expLogGrowth));
+    m.capitalNeeded = m.breakevenTotExp - m.breakevenTotRev;
+
+  } else {
+    m.breakevenWeek = 0;
+    m.breakevenFlow = m.rev0;
+    m.breakevenTotRev = 0;
+    m.breakevenTotExp = 0;
+    m.capitalNeeded = 0;
+  }
+
 
   // when will we make 100M / yr?
   m.ipoWeek = (Math.log(1e8/52) - m.rev0Log) / m.revLogGrowth;
 };
 
-
+/*
+  If we're animating the UI, move forward by dt seconds.
+*/
 OomModel.prototype.animate = function(dt) {
   var m = this;
   if (m.everDragged && m.showInstructions > 0) {

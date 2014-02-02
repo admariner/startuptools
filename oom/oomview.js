@@ -1,3 +1,10 @@
+/*
+  Makes a full-page display of startup revenue, expense, growth, and capital needed.
+  It's all one canvas with draggable bits.
+  The actual math is in oommodel.js
+
+  See tlbcore doc for $.defPages, $.mkAnimatedCanvas
+*/
 
 var oommodel            = require('./oommodel');
 
@@ -25,10 +32,10 @@ $.defPages('',
             top.html('<div class="oomView"><canvas class="oomCanvas"></canvas></div>' +
                      '<div class="oomFooter"></div>');
 
-            top.find('.oomCanvas').fmtOomCanvas(m);
+            top.find('.oomCanvas').mkAnimatedCanvas(m, drawOom, {});
             top.find('.oomFooter').fmtOomFooter();
 
-            $(top).children().first().bogartWindowEvents({
+            top.children().first().bogartWindowEvents({
               'resize': onWindowResize,
               'keydown': onWindowKeydown
             });
@@ -44,7 +51,7 @@ $.defPages('',
             return this;
 
             function onWindowKeydown(ev) {
-              // WRITEME
+              // WRITEME: 
             }
 
             function onWindowResize(ev) {
@@ -59,6 +66,9 @@ $.defPages('',
               return (winW !== oldWinW || winH !== oldWinH);
             }
             
+            /*
+              Because I can't figure out how to make full-page layouts in CSS.
+             */
             function adjustSizes() {
               var padL = 5, padR = 5;
               var footerH = 40;
@@ -77,16 +87,8 @@ $.defPages('',
                 canvas.width = mainW;
                 $(this).maximizeCanvasResolution();
               });
-
-
-              // WRITEME
             }
           });
-
-$.fn.fmtOomCanvas = function(m) {
-  var top = this;
-  top.mkAnimatedCanvas(m, drawOom, {});
-}
 
 $.fn.fmtOomFooter = function(o) {
   this.html('<center>' +
@@ -95,6 +97,10 @@ $.fn.fmtOomFooter = function(o) {
   return this;
 };
 
+/*
+  Formatters
+*/
+
 function fmtWeek(week) {
   return 'week ' + week.toFixed(0);
 }
@@ -102,7 +108,6 @@ function fmtWeek(week) {
 function fmtYear(week) {
   return 'year ' + (week / weeksPerYear).toFixed(1);
 }
-
 
 function fmtMoney(v, digits) {
   var powDigits = Math.pow(10, digits);
@@ -151,6 +156,10 @@ function fmtGrowth(v) {
   return (v*100).toFixed(1) + '%';
 }
 
+/*
+  Canvas drawing helpers
+*/
+
 function drawDragHandle(ctx, cX, cY, radius, style) {
   ctx.beginPath();
 
@@ -182,27 +191,22 @@ function drawDragHandle(ctx, cX, cY, radius, style) {
   }
 }
 
+/*
+  Draw everything in the canvas (through ctx), and associate callbacks with clickable 
+  or draggable areas.
+
+  This gets called whenever something changes (but by using requestAnimationFrame, 
+  only once per screen refresh) and it redraws everything from scratch.
+
+  m: an OomModel
+  ctx: an HTML5 2D canvas rendering context.
+  hd: a HitDetector (from tlbcore)
+  lo: a layout object, containing at least {boxL, boxT, boxR, boxB} for the canvas dimensions
+  o: options, not used here
+*/
 function drawOom(m, ctx, hd, lo, o) {
-
-  lo.plotL = lo.boxL + 60;
-  lo.plotR = lo.boxR - 60;
-  lo.plotT = lo.boxT + 30;
-  lo.plotB = lo.boxB - 30;
-  lo.dragRad = 6;
-
-  lo.convWeekToX = function(week) {
-    return (week / m.nWeeks) * (lo.plotR - lo.plotL) + lo.plotL;
-  };
-  lo.convXToWeek = function(x) {
-    return (x - lo.plotL) / (lo.plotR - lo.plotL) * m.nWeeks;
-  };
-  lo.convFlowToY = function(flow) {
-    return (Math.log(flow) - Math.log(m.minFlow)) / (Math.log(m.maxFlow) - Math.log(m.minFlow)) * (lo.plotT - lo.plotB) + lo.plotB;
-  };
-  lo.convYToFlow = function(y) {
-    return Math.exp((y - lo.plotB) / (lo.plotT - lo.plotB) * (Math.log(m.maxFlow) - Math.log(m.minFlow)) + Math.log(m.minFlow));
-  };
-
+  
+  setupLayout();
   drawInstructions();
   drawAxes();
   drawCapital();
@@ -212,8 +216,34 @@ function drawOom(m, ctx, hd, lo, o) {
   drawIpo();
   drawXLabels();
   drawYLabels();
-
   return;
+
+  function setupLayout() {
+    /*
+      Leave some margins around the plot for axis labels etc.
+     */
+    lo.plotL = lo.boxL + 60;
+    lo.plotR = lo.boxR - 60;
+    lo.plotT = lo.boxT + 30;
+    lo.plotB = lo.boxB - 30;
+    lo.dragRad = 6;
+
+    /*
+      These functions, which had better be correct inverses of each other, define the X and Y scaling of the plot
+     */
+    lo.convWeekToX = function(week) {
+      return (week / m.nWeeks) * (lo.plotR - lo.plotL) + lo.plotL;
+    };
+    lo.convXToWeek = function(x) {
+      return (x - lo.plotL) / (lo.plotR - lo.plotL) * m.nWeeks;
+    };
+    lo.convFlowToY = function(flow) {
+      return (Math.log(flow) - Math.log(m.minFlow)) / (Math.log(m.maxFlow) - Math.log(m.minFlow)) * (lo.plotT - lo.plotB) + lo.plotB;
+    };
+    lo.convYToFlow = function(y) {
+      return Math.exp((y - lo.plotB) / (lo.plotT - lo.plotB) * (Math.log(m.maxFlow) - Math.log(m.minFlow)) + Math.log(m.minFlow));
+    };
+  }
 
   function drawAxes() {
     ctx.strokeStyle = '#cccccc';
@@ -230,7 +260,7 @@ function drawOom(m, ctx, hd, lo, o) {
 
   function drawXLabels() {
     ctx.font = '12px Arial';
-    for (var week=0, year=0; week <= m.nWeeks; week+=365.2425/7, year += 1) {
+    for (var week=0, year=0; week <= m.nWeeks; week+=weeksPerYear, year += 1) {
       var label = 'year ' + year.toString();
       var weekX = lo.convWeekToX(week);
 
@@ -302,7 +332,7 @@ function drawOom(m, ctx, hd, lo, o) {
       ctx.fill();
     }
     ctx.font = '15px Arial';
-    var label = m.capitalNeeded > 0 ? (fmtMoney(m.capitalNeeded, 2) + ' capital needed') : 'Infinite capital needed';
+    var label = m.capitalNeeded >= 0 ? (fmtMoney(m.capitalNeeded, 2) + ' capital needed') : 'Infinite capital needed';
     var labelW = ctx.measureText(label).width;
     var lbWeek = m.breakevenWeek > 0 ? Math.min(20, m.breakevenWeek / 4) : 20;
     var lbX = Math.max(lo.plotL + labelW/2, lo.convWeekToX(lbWeek));
