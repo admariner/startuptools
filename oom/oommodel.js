@@ -5,7 +5,7 @@ exports.OomModel = OomModel;
   Start with initial revenue and expenses, both growing at some constant rate.
   Calculate the time until breakeven, and the amount of capital needed to get there.
   Everything here is in dollars and weeks. OomView also displays things in month and year units.
-  
+
 */
 
 function OomModel(o) {
@@ -17,8 +17,11 @@ function OomModel(o) {
 
   m.minFlow = 40;
   m.maxFlow = 2100000;
-  m.showInstructions = 1.0;
-  m.everDragged = false;
+  m.showInstructions = o.rev0 ? 0.0 : 1.0;
+  m.everDragged = o.rev0 ? true : false;
+
+  m.showWeekly = true;
+  m.showMonthly = true;
 
   m.nWeeks = 5 * 365.2425 / 7;
   m.calc();

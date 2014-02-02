@@ -222,9 +222,28 @@ function drawOom(m, ctx, hd, lo, o) {
     /*
       Leave some margins around the plot for axis labels etc.
      */
-    lo.plotL = lo.boxL + 60;
-    lo.plotR = lo.boxR - 60;
-    lo.plotT = lo.boxT + 30;
+    lo.labelW = 50;
+    var pL = lo.boxL+5;
+    var pR = lo.boxR-5;
+    if (m.showMonthly) {
+      pR -= lo.labelW;
+      lo.monthlyAxisR = pR;
+    }
+    if (m.showWeekly) {
+      pL += lo.labelW;
+      lo.weeklyAxisL = pL;
+    }
+    if (m.showMonthly) {
+      pL += lo.labelW;
+      lo.monthlyAxisL = pL;
+    }
+    if (m.showWeekly) {
+      pR -= lo.labelW;
+      lo.weeklyAxisR = pR;
+    }
+    lo.plotL = pL;
+    lo.plotR = pR;
+    lo.plotT = lo.boxT + 45;
     lo.plotB = lo.boxB - 30;
     lo.dragRad = 6;
 
@@ -251,10 +270,6 @@ function drawOom(m, ctx, hd, lo, o) {
     ctx.beginPath();
     ctx.moveTo(lo.plotL, lo.plotB);
     ctx.lineTo(lo.plotR, lo.plotB);
-    ctx.moveTo(lo.plotL, lo.plotB);
-    ctx.lineTo(lo.plotL, lo.plotT);
-    ctx.moveTo(lo.plotR, lo.plotB);
-    ctx.lineTo(lo.plotR, lo.plotT);
     ctx.stroke();
   }
 
@@ -278,41 +293,113 @@ function drawOom(m, ctx, hd, lo, o) {
   }
 
   function drawYLabels() {
-    ctx.font = '12px Arial';
-    _.each([1,2,5], function(flow) {
-      while (flow < m.minFlow) flow *= 10;
-      while (flow <= m.maxFlow) {
-        var label = fmtMoney(flow, 1);
-        var flowY = lo.convFlowToY(flow);
-
-        ctx.beginPath();
-        ctx.moveTo(lo.plotL, flowY);
-        ctx.lineTo(lo.plotL-7, flowY);
-        ctx.strokeStyle = '#888888';
-        ctx.lineWidth = lo.thinWidth;
-        ctx.stroke();
-        ctx.textAlign = 'right';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(label, lo.plotL - 10, flowY);
-        
-        ctx.beginPath();
-        ctx.moveTo(lo.plotR, flowY);
-        ctx.lineTo(lo.plotR+7, flowY);
-        ctx.strokeStyle = '#888888';
-        ctx.lineWidth = lo.thinWidth;
-        ctx.stroke();
-        ctx.textAlign = 'left';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(label, lo.plotR + 10, flowY);
-        
-        flow *= 10;
-      }
-    });
-
     ctx.font = 'bold 12px Arial';
     ctx.textAlign = 'left';
-    ctx.textBaseline = 'top';
-    ctx.fillText('Weekly revenue/expense', lo.boxL, lo.boxT);
+    ctx.textBaseline = 'bottom';
+    ctx.fillText('Revenue/Expense', lo.boxL, lo.plotT-30);
+
+    if (m.showWeekly) {
+      ctx.beginPath();
+      ctx.moveTo(lo.weeklyAxisL, lo.plotB);
+      ctx.lineTo(lo.weeklyAxisL, lo.plotT);
+      ctx.moveTo(lo.weeklyAxisR, lo.plotB);
+      ctx.lineTo(lo.weeklyAxisR, lo.plotT);
+      ctx.strokeStyle = '#cccccc';
+      ctx.lineWidth = lo.thinWidth;
+      ctx.stroke();
+
+      ctx.font = '12px Arial';
+      ctx.textBaseline = 'middle';
+      _.each([1,3], function(flow) {
+        while (flow < m.minFlow) flow *= 10;
+        while (flow <= m.maxFlow) {
+          var label = fmtMoney(flow, 1);
+          var flowY = lo.convFlowToY(flow);
+
+          ctx.beginPath();
+          ctx.moveTo(lo.weeklyAxisL, flowY);
+          ctx.lineTo(lo.weeklyAxisL-7, flowY);
+          ctx.strokeStyle = '#888888';
+          ctx.lineWidth = lo.thinWidth;
+          ctx.stroke();
+          ctx.textAlign = 'right';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(label, lo.weeklyAxisL-10, flowY);
+          
+          ctx.beginPath();
+          ctx.moveTo(lo.weeklyAxisR, flowY);
+          ctx.lineTo(lo.weeklyAxisR+7, flowY);
+          ctx.strokeStyle = '#888888';
+          ctx.lineWidth = lo.thinWidth;
+          ctx.stroke();
+          ctx.textAlign = 'left';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(label, lo.weeklyAxisR+10, flowY);
+          
+          flow *= 10;
+        }
+      });
+      ctx.font = 'bold 12px Arial';
+      ctx.textAlign = 'right';
+      ctx.textBaseline = 'bottom';
+      ctx.fillText('Weekly', lo.weeklyAxisL, lo.plotT-8);
+
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'bottom';
+      ctx.fillText('Weekly', lo.weeklyAxisR, lo.plotT-8);
+    }
+    if (m.showMonthly) {
+      ctx.beginPath();
+      ctx.moveTo(lo.monthlyAxisL, lo.plotB);
+      ctx.lineTo(lo.monthlyAxisL, lo.plotT);
+      ctx.moveTo(lo.monthlyAxisR, lo.plotB);
+      ctx.lineTo(lo.monthlyAxisR, lo.plotT);
+      ctx.strokeStyle = '#cccccc';
+      ctx.lineWidth = lo.thinWidth;
+      ctx.stroke();
+
+      ctx.font = '12px Arial';
+      _.each([1,3], function(monthlyFlow) {
+        var flow = monthlyFlow / weeksPerMonth;
+        while (flow < m.minFlow) {flow *= 10; monthlyFlow *= 10; }
+        while (flow <= m.maxFlow) {
+          var label = fmtMoney(monthlyFlow, 1);
+          var flowY = lo.convFlowToY(flow);
+
+          ctx.beginPath();
+          ctx.moveTo(lo.monthlyAxisL, flowY);
+          ctx.lineTo(lo.monthlyAxisL-7, flowY);
+          ctx.strokeStyle = '#888888';
+          ctx.lineWidth = lo.thinWidth;
+          ctx.stroke();
+          ctx.textAlign = 'right';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(label, lo.monthlyAxisL-10, flowY);
+          
+          ctx.beginPath();
+          ctx.moveTo(lo.monthlyAxisR, flowY);
+          ctx.lineTo(lo.monthlyAxisR+7, flowY);
+          ctx.strokeStyle = '#888888';
+          ctx.lineWidth = lo.thinWidth;
+          ctx.stroke();
+          ctx.textAlign = 'left';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(label, lo.monthlyAxisR+10, flowY);
+          
+          flow *= 10;
+          monthlyFlow *= 10;
+        }
+      });
+
+      ctx.font = 'bold 12px Arial';
+      ctx.textAlign = 'right';
+      ctx.textBaseline = 'bottom';
+      ctx.fillText('Monthly', lo.monthlyAxisL, lo.plotT-8);
+
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'bottom';
+      ctx.fillText('Monthly', lo.monthlyAxisR, lo.plotT-8);
+    }
   }
 
   function drawCapital() {
