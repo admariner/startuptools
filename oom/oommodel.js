@@ -1,12 +1,19 @@
 exports.OomModel = OomModel;
 
+/*
+  Represent the growth and funding trajectory for a startup.
+  Start with initial revenue and expenses, both growing at some constant rate.
+  Calculate the time until breakeven, and the amount of capital needed to get there.
+  Everything here is in dollars and weeks. OomView also displays things in month and year units.
+  
+*/
 
 function OomModel(o) {
   var m = this;
   m.rev0 = o.rev0 ? o.rev0 : 200;
   m.revGrowth = o.revGrowth ? o.revGrowth : 0.02;
   m.exp0 = o.exp0 ? o.exp0 : 1600;
-  m.expGrowth = 0.0;
+  m.expGrowth = o.expGrowth ? o.expGrowth : 0.0;
 
   m.minFlow = 40;
   m.maxFlow = 2100000;
@@ -20,28 +27,23 @@ OomModel.prototype = Object.create(EventEmitter.prototype);
 
 
 
-OomModel.prototype.setRev0 = function(rev0) {
+OomModel.prototype.setRevAtWeek = function(week, rev) {
   var m = this;
-  m.rev0 = rev0;
+  if (week === 0) {
+    m.rev0 = rev;
+  } else {
+    m.revGrowth = Math.exp(Math.log(rev / m.rev0) / week) - 1;
+  }
   m.calc();
 };
 
-OomModel.prototype.setExp0 = function(exp0) {
+OomModel.prototype.setExpAtWeek = function(week, exp) {
   var m = this;
-  m.exp0 = exp0;
-  m.calc();
-};
-
-OomModel.prototype.setRevN = function(week, revN) {
-  var m = this;
-  m.revGrowth = Math.exp(Math.log(revN / m.rev0) / week) - 1;
-  m.calc();
-};
-
-OomModel.prototype.setExpN = function(week, expN) {
-  var m = this;
-
-  m.expGrowth = Math.exp(Math.log(expN / m.exp0) / week) - 1;
+  if (week === 0) {
+    m.exp0 = exp;
+  } else {
+    m.expGrowth = Math.exp(Math.log(exp / m.exp0) / week) - 1;
+  }
   m.calc();
 };
 

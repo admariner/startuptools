@@ -11,7 +11,7 @@ describe('OomModel', function() {
     assert.ok(Math.abs(m.breakevenFlow - 2000) < 0.1);
     assert.ok(Math.abs(m.breakevenWeek - 77.90) < 0.1);
 
-    m.setRevN(52*3, 50000);
+    m.setRevAtWeek(52*3, 50000);
     assert.ok(Math.abs(m.breakevenFlow - 2000) < 0.1);
     assert.ok(Math.abs(m.breakevenWeek - 65.06) < 0.1);
   });

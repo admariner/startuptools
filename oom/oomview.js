@@ -34,7 +34,7 @@ $.defPages('',
             });
 
             m.on('changed', function() {
-              top.setHash('_' + m.rev0.toFixed(1) + '_' + m.exp0.toFixed(1) + '_' + m.revGrowth.toFixed(4) + '_' + m.expGrowth.toFixed(4));
+              top.setHash('_' + m.rev0.toFixed(1) + '_' + m.exp0.toFixed(1) + '_' + m.revGrowth.toFixed(6) + '_' + m.expGrowth.toFixed(6));
             });
 
             getSizes();
@@ -414,7 +414,7 @@ function drawOom(m, ctx, hd, lo, o) {
       onDown: function(mdX, mdY) {
         hd.dragging = function(dragX, dragY) {
           var newRev = lo.convYToFlow(dragY);
-          m.setRev0(newRev);
+          m.setRevAtWeek(0, newRev);
           m.everDragged = true;
         };
       },
@@ -430,7 +430,7 @@ function drawOom(m, ctx, hd, lo, o) {
         hd.dragging = function(dragX, dragY) {
           var newWeek = lo.convXToWeek(dragX);
           var newRev = lo.convYToFlow(dragY);
-          m.setRevN(newWeek, newRev);
+          m.setRevAtWeek(newWeek, newRev);
           m.everDragged = true;
         };
       }, 
@@ -475,7 +475,7 @@ function drawOom(m, ctx, hd, lo, o) {
       onDown: function(mdX, mdY) {
         hd.dragging = function(dragX, dragY) {
           var newExp = lo.convYToFlow(dragY);
-          m.setExp0(newExp);
+          m.setExpAtWeek(0, newExp);
           m.everDragged = true;
         };
       },
@@ -491,7 +491,7 @@ function drawOom(m, ctx, hd, lo, o) {
         hd.dragging = function(dragX, dragY) {
           var newWeek = lo.convXToWeek(dragX);
           var newExp = lo.convYToFlow(dragY);
-          m.setExpN(newWeek, newExp);
+          m.setExpAtWeek(newWeek, newExp);
           m.everDragged = true;
         };
       },
@@ -562,7 +562,7 @@ function drawOom(m, ctx, hd, lo, o) {
     var drawArrow = lo.convWeekToX(m.ipoWeek) > lo.plotR;
     var p0X = drawArrow ? lo.plotR : lo.convWeekToX(m.ipoWeek);
     var p0Y = lo.convFlowToY(m.revAtWeek(m.ipoWeek));
-    var label = '$100M revenue at ' + fmtYear(m.ipoWeek);
+    var label = '$100M/yr revenue at ' + fmtYear(m.ipoWeek);
     var p1X = Math.min(lo.plotR-20, p0X-20);
     var p1Y = p0Y;
     
@@ -595,7 +595,7 @@ function drawOom(m, ctx, hd, lo, o) {
 
     ctx.font = '25px Arial';
     lines=[
-      'Don\'t Run Out of Money',
+      'How much money will you burn before your startup is profitable?',
       'Drag the red and green handles to change expense and revenue',
       'The shaded blue area shows how much money you\'ll need'
     ];
