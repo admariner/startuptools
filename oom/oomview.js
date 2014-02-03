@@ -9,152 +9,302 @@
 var oommodel            = require('./oommodel');
 
 $.defPages('', 
-          function(rest) {
-            var rs = rest.split('_');
-            console.log('Parse', rs);
-            return {
-              rev0: rs[0] ? parseFloat(rs[0]) : undefined,
-              exp0: rs[1] ? parseFloat(rs[1]) : undefined,
-              revGrowth: rs[2] ? parseFloat(rs[2]) : undefined,
-              expGrowth: rs[3] ? parseFloat(rs[3]) : undefined,
-            };
-          },
-          function(o) {
-            return ''; // WRITEME
-          },
-          function(o) {
-            var top = this;
-            var m = new oommodel.OomModel(o);
-            var winW, winH;
-            console.log('OomModel stored in window.oom0 for your convenience');
-            window.oom0 = m;
+           function(rest) {
+             var rs = rest.split('_');
+             console.log('Parse', rs);
+             return {
+               units: rs[0] ? rs[0] : undefined,
+               rev0: rs[1] ? parseFloat(rs[1]) : undefined,
+               exp0: rs[2] ? parseFloat(rs[2]) : undefined,
+               revGrowth: rs[3] ? parseFloat(rs[3]) : undefined,
+               expGrowth: rs[4] ? parseFloat(rs[4]) : undefined,
+             };
+           },
+           null,
+           function(o) {
+             var top = this;
+             var m = new oommodel.OomModel(o);
+             if (0 && !o.rev0) {
+               m.showInstructions = 1.0;
+               m.everDragged = o.rev0 ? true : false;
+             }
 
-            top.html('<div class="oomView"><canvas class="oomCanvas"></canvas></div>' +
-                     '<div class="oomFooter"></div>');
+             var winW, winH;
+             console.log('OomModel stored in window.oom0 for your convenience');
+             window.oom0 = m;
 
-            top.find('.oomCanvas').mkAnimatedCanvas(m, drawOom, {});
-            top.find('.oomFooter').fmtOomFooter();
+             top.html('<div class="oomView"><canvas class="oomCanvas"></canvas></div>' +
+                      '<div class="oomFooter"></div>');
 
-            top.children().first().bogartWindowEvents({
-              'resize': onWindowResize,
-              'keydown': onWindowKeydown
-            });
+             top.find('.oomCanvas').mkAnimatedCanvas(m, drawOom, {});
+             top.find('.oomFooter').fmtOomFooter();
 
-            m.on('changed', function() {
-              top.setHash('_' + m.rev0.toFixed(1) + '_' + m.exp0.toFixed(1) + '_' + m.revGrowth.toFixed(6) + '_' + m.expGrowth.toFixed(6));
-            });
+             top.children().first().bogartWindowEvents({
+               'resize': onWindowResize,
+               'keydown': onWindowKeydown
+             });
 
-            getSizes();
-            adjustSizes();
-            top.animation2(m);
-            m.emit('changed');
-            return this;
+             m.on('changed', function() {
+               top.setHash('_' + m.units + '_' + m.rev0.toFixed(1) + '_' + m.exp0.toFixed(1) + '_' + m.revGrowth.toFixed(6) + '_' + m.expGrowth.toFixed(6));
+             });
 
-            function onWindowKeydown(ev) {
-              // WRITEME: 
-            }
+             getSizes();
+             adjustSizes();
+             top.animation2(m);
+             m.emit('changed');
+             return this;
 
-            function onWindowResize(ev) {
-              if (top.find('.scopeCanvas').length === 0) return false;
-              if (getSizes()) adjustSizes();
-            }
+             function onWindowKeydown(ev) {
+               if (ev.which === 87) { // W
+                 m.setUnits('week');
+               }
+               else if (ev.which === 77) { // M
+                 m.setUnits('month');
+               }
+               else if (ev.which === 89) { // Y
+                 m.setUnits('year');
+               }
+             }
 
-            function getSizes() {
-              var oldWinW = winW, oldWinH = winH;
-              winW = Math.max(500, $(window).width());
-              winH = Math.max(400, $(window).height());
-              return (winW !== oldWinW || winH !== oldWinH);
-            }
-            
-            /*
-              Because I can't figure out how to make full-page layouts in CSS.
+             function onWindowResize(ev) {
+               if (top.find('.oomCanvas').length === 0) return false;
+               if (getSizes()) adjustSizes();
+             }
+
+             function getSizes() {
+               var oldWinW = winW, oldWinH = winH;
+               winW = Math.max(500, $(window).width());
+               winH = Math.max(400, $(window).height());
+               return (winW !== oldWinW || winH !== oldWinH);
+             }
+             
+             /*
+               Because I can't figure out how to make full-page layouts in CSS.
              */
-            function adjustSizes() {
-              var padL = 5, padR = 5;
-              var footerH = 40;
-              var headerH = 10;
-              var mainW = winW - padL - padR;
-              var mainH = winH - headerH - footerH - 10;
-              top.find('.oomView').each(function() {
-                $(this).css({
-                  width: (mainW).toString() + 'px', 
-                  height: (mainH).toString() + 'px',
-                  left: (padL).toString() + 'px',
-                  top: (headerH).toString() + 'px'
-                });
-                var canvas = $(this).find('.oomCanvas')[0];
-                canvas.height = mainH;
-                canvas.width = mainW;
-                $(this).maximizeCanvasResolution();
-              });
-            }
-          });
+             function adjustSizes() {
+               var padL = 5, padR = 5;
+               var footerH = 40;
+               var headerH = 10;
+               var mainW = winW - padL - padR;
+               var mainH = winH - headerH - footerH - 10;
+               top.find('.oomView').each(function() {
+                 $(this).css({
+                   width: (mainW).toString() + 'px', 
+                   height: (mainH).toString() + 'px',
+                   left: (padL).toString() + 'px',
+                   top: (headerH).toString() + 'px'
+                 });
+                 var canvas = $(this).find('.oomCanvas')[0];
+                 canvas.height = mainH;
+                 canvas.width = mainW;
+                 $(this).maximizeCanvasResolution();
+                 m.emit('changed');
+               });
+             }
+           });
+
+$.fn.fmtOomEmbed = function(o) {
+  var top = this;
+  var m = new oommodel.OomModel(o);
+
+  top.html('<div class="oomView"><canvas width="800" height="480" class="oomCanvas"></canvas></div>');
+  top.maximizeCanvasResolution();
+  top.find('.oomCanvas').mkAnimatedCanvas(m, drawOom, {});
+  top.animation2(m);
+  m.emit('changed');
+  return this;
+};
 
 $.fn.fmtOomFooter = function(o) {
   this.html('<center>' +
-            '<!-- <span class="foot"><a href="#about">About</a></span> -->' +
+            '<span class="footer"><a href="#about">About</a></span>' +
             '</center>');
   return this;
 };
+
+
+$.defPage('about', function(o) {
+  var top = this;
+  top.html('<div class="oomAbout">' +
+           '<h1>Startup Funding Calculator</h1>' +
+           '<p>This tool calculates how much funding your startup needs. Assuming your expenses are '+
+           'constant and your revenue is growing, it displays when you\'ll reach profitability '+
+           'and how much capital you\'ll burn through before then.</p>' +
+           '<p>Geometrically, the capital needed is the area between the revenue and expense curve.</p>' +
+           '<p>You should raise somewhat more capital than the number given here. If you raised ' +
+           'exactly the amount given and if everything goes as well as expected, your bank account '+
+           'would be at $0 the month you hit profitability, which is kind of stressful. So raise some extra buffer.</p>' +
+           '<p>Try it out below! You can drag the red or green handles to set expense, revenue and growth.</p>' +
+           '</div>' +
+           '<div class="oomEmbed" modelOpts="{&quot;duration&quot;:261,&quot;revGrowth&quot;:0.015,&quot;maxFlow&quot;:3e5}"></div>' +
+           '<div class="oomAbout">' +
+           '<p>By default it shows weekly rates, but there\'s a button to use monthly or yearly rates. ' +
+           'If you use the <a href="#_">full page</a> version, you can email links including the current numbers. ' +
+           'The code is on <a href="https://www.github.com/tlbtlbtlb/startuptools">github</a> if you\'re curious how it works.</p>' +
+           '</div>' +
+           '<center>' +
+           '<span class="footer">By Trevor Blackwell</span>' +
+           '</center>'
+          );
+
+  top.find('.oomEmbed').each(function(el) {
+    var embed = $(this);
+    var modelOpts = JSON.parse(embed.attr('modelOpts'));
+    console.log(modelOpts);
+    embed.fmtOomEmbed(modelOpts);
+  });
+});
 
 /*
   Formatters
 */
 
-function fmtWeek(week) {
-  return 'week ' + week.toFixed(0);
-}
-
-function fmtYear(week) {
-  return 'year ' + (week / weeksPerYear).toFixed(1);
-}
-
-function fmtMoney(v, digits) {
-  var powDigits = Math.pow(10, digits);
-  if (v >= 100e12) { // Don't show silly numbers
-    return 'Unreasonable';
-  }
-  if (v >= 1000000000000*powDigits) {
-    return '$' + (v/1000000000000).toFixed(0) + 'T';
-  }
-  if (v >= 1000000000000) {
-    return '$' + (v/1000000000000).toFixed(digits-1) + 'T';
-  }
-  if (v >= 1000000000*powDigits) {
-    return '$' + (v/1000000000).toFixed(0) + 'B';
-  }
-  if (v >= 1000000000) {
-    return '$' + (v/1000000000).toFixed(digits-1) + 'B';
-  }
-  if (v >= 1000000*powDigits) {
-    return '$' + (v/1000000).toFixed(0) + 'M';
-  }
-  if (v >= 1000000) {
-    return '$' + (v/1000000).toFixed(digits-1) + 'M';
-  }
-  if (v >= 1000*powDigits) {
-    return '$' + (v/1000).toFixed(0) + 'k';
-  }
-  if (v >= 1000) {
-    return '$' + (v/1000).toFixed(digits-1) + 'k';
-  }
-  return '$' + v.toFixed(0);
-}
-
 var weeksPerYear = 365.2425 / 7;
 var weeksPerMonth = 365.2425 / 7 / 12;
-
-function weekToMonth(week) {
-  return week / weeksPerMonth;
-}
 
 function weekToMonthGrowth(weeklyGrowth) {
   return Math.exp(Math.log(1+weeklyGrowth) * weeksPerMonth)-1;
 }
 
-function fmtGrowth(v) {
-  return (v*100).toFixed(1) + '%';
+function fmtTime(week, units, digits) {
+  if (!digits) digits = 0;
+  switch(units) {
+  case 'week':
+    return 'week ' + week.toFixed(digits);
+  case 'month':
+    return 'month ' + (week / weeksPerMonth).toFixed(digits);
+  case 'year':
+    return 'year ' + (week / weeksPerYear).toFixed(digits);
+  default:
+    throw new Error('unknown units ' + units);
+  }
 }
+
+function fmtPercentage(v, digits, stz) {
+  v *= 100;
+  if (v !== 0) {
+    digits = Math.max(0, digits - Math.ceil(Math.log(Math.abs(v))/Math.log(10)+0.001));
+  }
+  var asFixed = v.toFixed(digits);
+  if (stz) asFixed = asFixed.replace(/0+$/, '');
+  return asFixed + '%';
+}
+
+function fmtGrowth(weeklyGrowth, units, digits, showUnits) {
+  if (!digits) digits = 0;
+  switch(units) {
+  case 'week':
+    return fmtPercentage(weeklyGrowth, digits) + (showUnits ? ' weekly' : '');
+  case 'month':
+    return fmtPercentage(Math.exp(Math.log(1+weeklyGrowth) * weeksPerMonth) - 1, digits) + (showUnits ? ' monthly' : '');
+  case 'year':
+    return fmtPercentage(Math.exp(Math.log(1+weeklyGrowth) * weeksPerYear) - 1, digits) + (showUnits ? ' yearly' : '');
+  default:
+    throw new Error('unknown units ' + units);
+  }
+}
+
+function fmtFlow(weeklyFlow, units, digits, showUnits) {
+  if (!digits) digits = 0;
+  switch(units) {
+  case 'week':
+    return fmtMoney(weeklyFlow, digits) + (showUnits ? ' weekly' : '');
+  case 'month':
+    return fmtMoney(weeklyFlow * weeksPerMonth, digits) + (showUnits ? ' monthly' : '');
+  case 'year':
+    return fmtMoney(weeklyFlow * weeksPerYear, digits) + (showUnits ? ' yearly' : '');
+  default:
+    throw new Error('unknown units ' + units);
+  }
+}
+
+function fmtUnits(units) {
+  switch(units) {
+  case 'week': 
+    return 'Weekly';
+  case 'month':
+    return 'Monthly';
+  case 'year':
+    return 'Yearly';
+  default:
+    throw new Error('unknown units ' + units);
+  }
+}
+
+function fmtMoney(v, digits) {
+  var suffix = '';
+  if (v >= 100e12) { // Don't show silly numbers
+    return 'Unreasonable';
+  }
+  if (v >= 1e12) {
+    suffix = 'T';
+    v /= 1e12;
+  }
+  else if (v >= 1e9) {
+    suffix = 'B';
+    v /= 1e9;
+  }
+  else if (v >= 1e6) {
+    suffix = 'M';
+    v /= 1e6;
+  }
+  else if (v >= 1e4) {
+    suffix = 'k';
+    v /= 1e3;
+  }
+  else {
+    suffix = '';
+  }
+  if (v >= 1000) {
+    digits = Math.max(0, digits-4);
+  }
+  else if (v >= 100) {
+    digits = Math.max(0, digits-3);
+  }
+  else if (v >= 10) {
+    digits = Math.max(0, digits-2);
+  }
+  else if (v >= 1) {
+    digits = Math.max(0, digits-1);
+  }
+
+  return '$' + v.toFixed(digits) + suffix;
+}
+
+function getGrowthRates(units) {
+  switch (units) {
+  case 'week':
+    return [0, 0.005, 0.01, 0.015, 0.02, 0.025, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.1];
+  case 'month':
+    return _.map([0, 0.025, 0.05, 0.075, 0.10, 0.15, 0.20, 0.25, 0.30, 0.40, 0.50], function(mgr) {
+      return Math.exp(Math.log(1+mgr) / weeksPerMonth) - 1;
+    });
+  case 'year':
+    return _.map([0, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0, 25.0, 50.0, 100.0], function(ygr) {
+      return Math.exp(Math.log(1+ygr) / weeksPerYear) - 1;
+    });
+  default:
+    throw new Error('unknown units ' + units);
+  }
+}
+
+function getFlows(units) {
+  switch (units) {
+  case 'week':
+    return [100, 300, 1000, 3000, 10000, 30000, 100000, 300000, 1e6, 3e6, 1e7];
+  case 'month':
+    return _.map([300, 1000, 3000, 10000, 30000, 100000, 300000, 1e6, 3e6, 1e7, 3e7], function(mfr) {
+      return mfr / weeksPerMonth;
+    })
+  case 'year':
+    return _.map([3000, 10000, 30000, 100000, 300000, 1e6, 3e6, 1e7, 3e7, 1e8], function(yfr) {
+      return yfr / weeksPerYear;
+    });
+  default:
+    throw new Error('unknown units ' + units);
+  }
+}
+
 
 /*
   Canvas drawing helpers
@@ -207,6 +357,7 @@ function drawDragHandle(ctx, cX, cY, radius, style) {
 function drawOom(m, ctx, hd, lo, o) {
   
   setupLayout();
+  drawTitle();
   drawInstructions();
   drawAxes();
   drawCapital();
@@ -222,27 +373,9 @@ function drawOom(m, ctx, hd, lo, o) {
     /*
       Leave some margins around the plot for axis labels etc.
      */
-    lo.labelW = 50;
-    var pL = lo.boxL+5;
-    var pR = lo.boxR-5;
-    if (m.showMonthly) {
-      pR -= lo.labelW;
-      lo.monthlyAxisR = pR;
-    }
-    if (m.showWeekly) {
-      pL += lo.labelW;
-      lo.weeklyAxisL = pL;
-    }
-    if (m.showMonthly) {
-      pL += lo.labelW;
-      lo.monthlyAxisL = pL;
-    }
-    if (m.showWeekly) {
-      pR -= lo.labelW;
-      lo.weeklyAxisR = pR;
-    }
-    lo.plotL = pL;
-    lo.plotR = pR;
+    lo.labelW = 60;
+    lo.plotL = lo.boxL + 5 + lo.labelW;
+    lo.plotR = lo.boxR - 20;
     lo.plotT = lo.boxT + 45;
     lo.plotB = lo.boxB - 30;
     lo.dragRad = 6;
@@ -294,112 +427,63 @@ function drawOom(m, ctx, hd, lo, o) {
 
   function drawYLabels() {
     ctx.font = 'bold 12px Arial';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText('Revenue/Expense', lo.plotL, lo.plotT-30);
+
+    ctx.beginPath();
+    ctx.moveTo(lo.plotL, lo.plotB);
+    ctx.lineTo(lo.plotL, lo.plotT);
+    ctx.moveTo(lo.weeklyAxisR, lo.plotB);
+    ctx.lineTo(lo.weeklyAxisR, lo.plotT);
+    ctx.strokeStyle = '#cccccc';
+    ctx.lineWidth = lo.thinWidth;
+    ctx.stroke();
+
+    ctx.font = '12px Arial';
+    ctx.textBaseline = 'middle';
+    var flows = getFlows(m.units);
+    _.each(flows, function(flow) {
+      if (flow <= m.maxFlow) {
+        var label = fmtFlow(flow, m.units, 2, false);
+        var flowY = lo.convFlowToY(flow);
+
+        ctx.beginPath();
+        ctx.moveTo(lo.plotL, flowY);
+        ctx.lineTo(lo.plotL-10, flowY);
+        ctx.strokeStyle = '#888888';
+        ctx.lineWidth = lo.thinWidth;
+        ctx.stroke();
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(label, lo.plotL-12, flowY);
+      }
+    });
+    ctx.font = 'bold 12px Arial';
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'bottom';
+    var label = fmtUnits(m.units);
+    ctx.fillText(label, lo.plotL-4, lo.plotT-8);
+
+    ctx.font = 'bold 12px Arial';
     ctx.textAlign = 'left';
     ctx.textBaseline = 'bottom';
-    ctx.fillText('Revenue/Expense', lo.boxL, lo.plotT-30);
-
-    if (m.showWeekly) {
-      ctx.beginPath();
-      ctx.moveTo(lo.weeklyAxisL, lo.plotB);
-      ctx.lineTo(lo.weeklyAxisL, lo.plotT);
-      ctx.moveTo(lo.weeklyAxisR, lo.plotB);
-      ctx.lineTo(lo.weeklyAxisR, lo.plotT);
-      ctx.strokeStyle = '#cccccc';
-      ctx.lineWidth = lo.thinWidth;
-      ctx.stroke();
-
-      ctx.font = '12px Arial';
-      ctx.textBaseline = 'middle';
-      _.each([1,3], function(flow) {
-        while (flow < m.minFlow) flow *= 10;
-        while (flow <= m.maxFlow) {
-          var label = fmtMoney(flow, 1);
-          var flowY = lo.convFlowToY(flow);
-
-          ctx.beginPath();
-          ctx.moveTo(lo.weeklyAxisL, flowY);
-          ctx.lineTo(lo.weeklyAxisL-7, flowY);
-          ctx.strokeStyle = '#888888';
-          ctx.lineWidth = lo.thinWidth;
-          ctx.stroke();
-          ctx.textAlign = 'right';
-          ctx.textBaseline = 'middle';
-          ctx.fillText(label, lo.weeklyAxisL-10, flowY);
-          
-          ctx.beginPath();
-          ctx.moveTo(lo.weeklyAxisR, flowY);
-          ctx.lineTo(lo.weeklyAxisR+7, flowY);
-          ctx.strokeStyle = '#888888';
-          ctx.lineWidth = lo.thinWidth;
-          ctx.stroke();
-          ctx.textAlign = 'left';
-          ctx.textBaseline = 'middle';
-          ctx.fillText(label, lo.weeklyAxisR+10, flowY);
-          
-          flow *= 10;
+    var label = 'change';
+    var labelW = ctx.measureText(label).width;
+    hd.add(lo.plotL, lo.plotT-20, lo.plotL+labelW+10, lo.plotT-5, {
+      drawCustom: function(hover) {
+        if (hover) {
+          ctx.fillStyle = '#ee0000';
+        } else {
+          ctx.fillStyle = '#5555ff';
         }
-      });
-      ctx.font = 'bold 12px Arial';
-      ctx.textAlign = 'right';
-      ctx.textBaseline = 'bottom';
-      ctx.fillText('Weekly', lo.weeklyAxisL, lo.plotT-8);
-
-      ctx.textAlign = 'left';
-      ctx.textBaseline = 'bottom';
-      ctx.fillText('Weekly', lo.weeklyAxisR, lo.plotT-8);
-    }
-    if (m.showMonthly) {
-      ctx.beginPath();
-      ctx.moveTo(lo.monthlyAxisL, lo.plotB);
-      ctx.lineTo(lo.monthlyAxisL, lo.plotT);
-      ctx.moveTo(lo.monthlyAxisR, lo.plotB);
-      ctx.lineTo(lo.monthlyAxisR, lo.plotT);
-      ctx.strokeStyle = '#cccccc';
-      ctx.lineWidth = lo.thinWidth;
-      ctx.stroke();
-
-      ctx.font = '12px Arial';
-      _.each([1,3], function(monthlyFlow) {
-        var flow = monthlyFlow / weeksPerMonth;
-        while (flow < m.minFlow) {flow *= 10; monthlyFlow *= 10; }
-        while (flow <= m.maxFlow) {
-          var label = fmtMoney(monthlyFlow, 1);
-          var flowY = lo.convFlowToY(flow);
-
-          ctx.beginPath();
-          ctx.moveTo(lo.monthlyAxisL, flowY);
-          ctx.lineTo(lo.monthlyAxisL-7, flowY);
-          ctx.strokeStyle = '#888888';
-          ctx.lineWidth = lo.thinWidth;
-          ctx.stroke();
-          ctx.textAlign = 'right';
-          ctx.textBaseline = 'middle';
-          ctx.fillText(label, lo.monthlyAxisL-10, flowY);
-          
-          ctx.beginPath();
-          ctx.moveTo(lo.monthlyAxisR, flowY);
-          ctx.lineTo(lo.monthlyAxisR+7, flowY);
-          ctx.strokeStyle = '#888888';
-          ctx.lineWidth = lo.thinWidth;
-          ctx.stroke();
-          ctx.textAlign = 'left';
-          ctx.textBaseline = 'middle';
-          ctx.fillText(label, lo.monthlyAxisR+10, flowY);
-          
-          flow *= 10;
-          monthlyFlow *= 10;
-        }
-      });
-
-      ctx.font = 'bold 12px Arial';
-      ctx.textAlign = 'right';
-      ctx.textBaseline = 'bottom';
-      ctx.fillText('Monthly', lo.monthlyAxisL, lo.plotT-8);
-
-      ctx.textAlign = 'left';
-      ctx.textBaseline = 'bottom';
-      ctx.fillText('Monthly', lo.monthlyAxisR, lo.plotT-8);
-    }
+        ctx.fillText(label, lo.plotL+5, lo.plotT-8);
+      },
+      onClick: function(mdX, mdY) {
+        m.toggleUnits();
+      }
+    });
+      
   }
 
   function drawCapital() {
@@ -415,18 +499,26 @@ function drawOom(m, ctx, hd, lo, o) {
       ctx.moveTo(p0X, p0Y);
       ctx.lineTo(p1X, p1Y);
       ctx.lineTo(p2X, p2Y);
-      ctx.fillStyle = '#eeeeff';
+
+      if (1) {
+        var pat = ctx.createLinearGradient(lo.plotL, lo.plotB, lo.plotL, lo.plotT);
+        pat.addColorStop(0.0, 'rgba(200,200,255,0.0)');
+        pat.addColorStop(1.0, 'rgba(200,200,255,0.9)');
+        ctx.fillStyle = pat;
+      } else {
+        ctx.fillStyle = 'rgba(200,200,255,0.3)';
+      }
       ctx.fill();
     }
-    ctx.font = '15px Arial';
-    var label = m.capitalNeeded >= 0 ? (fmtMoney(m.capitalNeeded, 2) + ' capital needed') : 'Infinite capital needed';
+    ctx.font = 'bold 15px Arial';
+    var label = m.capitalNeeded >= 0 ? (fmtMoney(m.capitalNeeded, 3) + ' capital needed') : 'Infinite capital needed';
     var labelW = ctx.measureText(label).width;
     var lbWeek = m.breakevenWeek > 0 ? Math.min(20, m.breakevenWeek / 4) : 20;
-    var lbX = Math.max(lo.plotL + labelW/2, lo.convWeekToX(lbWeek));
-    var lbY = (lo.convFlowToY(m.revAtWeek(lbWeek)) + lo.convFlowToY(m.expAtWeek(lbWeek))) / 2;
+    var lbX = lo.plotL + 15;
+    var lbY = (lo.convFlowToY(m.revAtWeek(lbWeek)) + 2*lo.convFlowToY(m.expAtWeek(lbWeek))) / 3;
 
     ctx.fillStyle = '#000000';
-    ctx.textAlign = 'center';
+    ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
     ctx.fillText(label, lbX, lbY);
   }
@@ -434,31 +526,102 @@ function drawOom(m, ctx, hd, lo, o) {
   function drawRev() {
     var p0X = lo.convWeekToX(0);
     var p0Y = lo.convFlowToY(m.rev0);
-    var p1Week = Math.min(m.nWeeks, m.ipoWeek);
+    var p1Week = Math.max(10, Math.min(m.nWeeks, m.ipoWeek));
     var p1X = lo.convWeekToX(p1Week);
     var p1Y = lo.convFlowToY(m.revAtWeek(p1Week));
-    
+
+    var p01Len = Math.sqrt(Math.pow(p1X-p0X, 2) + Math.pow(p1Y-p0Y, 2));
+    var protRad = Math.max(330, Math.max((lo.plotB-lo.plotT)*0.6, (lo.plotR - lo.plotL)*0.3)); // radius of our protractor
+    var pmX = p0X + (p1X-p0X)*protRad/p01Len;
+    var pmY = p0Y + (p1Y-p0Y)*protRad/p01Len;
+
+    ctx.textLayer(function() {
+      ctx.strokeStyle = '#000000';
+      ctx.lineWidth = lo.thinWidth;
+      var growthRates = getGrowthRates(m.units);
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = '#000000';
+      ctx.font = '12px Arial';
+      var maxAngle = 0;
+      _.each(growthRates, function(growthRate, growthRateIndex) {
+        var p3X = lo.convWeekToX(p1Week);
+        var p3Y = lo.convFlowToY(Math.exp(m.rev0Log + Math.log(1+growthRate) * p1Week));
+        var angle = Math.atan2(p3Y-p0Y, p3X-p0X);
+        maxAngle = Math.min(maxAngle, angle);
+        var p03Len = Math.sqrt(Math.pow(p3X-p0X, 2) + Math.pow(p3Y-p0Y, 2));
+        ctx.save();
+        ctx.translate(p0X, p0Y);
+        ctx.rotate(angle);
+        ctx.moveTo(protRad+0, 0);
+        ctx.lineTo(protRad+10, 0);
+        ctx.stroke();
+        var label = fmtGrowth(growthRate, m.units, 2, false);
+        ctx.fillText(label, protRad+12, 0);
+        ctx.restore();
+      });
+      ctx.beginPath();
+      if (0) ctx.moveTo(p0X + protRad*0.5, p0Y);
+      ctx.arc(p0X, p0Y, protRad, 0, maxAngle, true);
+      ctx.stroke();
+    });
     ctx.beginPath();
     ctx.moveTo(p0X, p0Y);
     ctx.lineTo(p1X, p1Y);
-    ctx.strokeStyle = '#00cc00';
+    ctx.strokeStyle = '#aaf5aa';
     ctx.lineWidth = 3;
     ctx.stroke();
 
-    ctx.save();
-    ctx.translate(p0X, p0Y);
-    ctx.rotate(Math.atan2(p1Y-p0Y, p1X-p0X));
-    var labels = [fmtMoney(m.rev0, 2) + ' weekly growing ' + fmtGrowth(m.revGrowth),
-                  fmtMoney(m.rev0 * weeksPerMonth, 2) + ' monthly growing ' + fmtGrowth(weekToMonthGrowth(m.revGrowth))];
-
-    ctx.fillStyle = '#000000';
-    ctx.font = '15px Arial';
-    ctx.textAlign = 'left';
-    ctx.textBaseline = 'top';
-    _.each(labels, function(label, labeli) {
-      ctx.fillText(label, 20, +4 + 18*labeli);
+    ctx.buttonLayer(function() {
+      var angle = Math.atan2(pmY-p0Y, pmX-p0X);
+      ctx.save();
+      ctx.translate(p0X, p0Y);
+      ctx.rotate(angle);
+      
+      ctx.textAlign = 'right';
+      ctx.textBaseline = 'middle';
+      ctx.font = 'bold 15px Arial';
+      
+      var label = 'growing ' + fmtGrowth(m.revGrowth, m.units, 3, false);
+      var labelW = ctx.measureText(label).width;
+      
+      if (0) {
+        ctx.beginPath();
+        drawRountangle(ctx, protRad-24-labelW, -8, protRad, +8, 5);
+        ctx.fillStyle='rgba(255,255,255,0.3)';
+        ctx.fill();
+      }
+      
+      ctx.fillStyle='#000000';
+      ctx.fillText(label, protRad-12, 0);
+      ctx.restore();
+      
     });
-    ctx.restore();
+
+    ctx.buttonLayer(function() {
+      var angle = Math.atan2(pmY-p0Y, pmX-p0X);
+      ctx.save();
+      ctx.translate(p0X, p0Y);
+      ctx.rotate(angle);
+
+      ctx.font = 'bold 15px Arial';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+
+      var label = fmtFlow(m.rev0, m.units, 3, true) + ' revenue';
+      var labelW = ctx.measureText(label).width;
+
+      if (0) {
+        ctx.beginPath();
+        drawRountangle(ctx, 10, -8, 20+labelW, +8, 5);
+        ctx.fillStyle='rgba(255,255,255,0.3)';
+        ctx.fill();
+      }
+
+      ctx.fillStyle = '#000000';
+      ctx.fillText(label, 15, 0);
+      ctx.restore();
+    });
 
     hd.add(p0X-lo.dragRad, p0Y-lo.dragRad, p0X+lo.dragRad, p0Y+lo.dragRad, {
       draw: function() {
@@ -475,9 +638,9 @@ function drawOom(m, ctx, hd, lo, o) {
         drawTooltip(ctx, lo, p0X, p0Y, 'Drag to change initial weekly revense');
       }});
 
-    hd.add(p1X-lo.dragRad, p1Y-lo.dragRad, p1X+lo.dragRad, p1Y+lo.dragRad, {
+    hd.add(pmX-lo.dragRad, pmY-lo.dragRad, pmX+lo.dragRad, pmY+lo.dragRad, {
       draw: function() {
-        drawDragHandle(ctx, p1X, p1Y, lo.dragRad, 'rev');
+        drawDragHandle(ctx, pmX, pmY, lo.dragRad, 'rev');
       }, 
       onDown: function(mdX, mdY) {
         hd.dragging = function(dragX, dragY) {
@@ -488,7 +651,7 @@ function drawOom(m, ctx, hd, lo, o) {
         };
       }, 
       onHover: function() {
-        drawTooltip(ctx, lo, p1X, p1Y, 'Drag to change weekly revense growth rate');
+        drawTooltip(ctx, lo, pmX, pmY, 'Drag to change weekly revense growth rate');
       }});
   }
 
@@ -502,24 +665,34 @@ function drawOom(m, ctx, hd, lo, o) {
     ctx.beginPath();
     ctx.moveTo(p0X, p0Y);
     ctx.lineTo(p1X, p1Y);
-    ctx.strokeStyle = '#cc0000';
+    ctx.strokeStyle = '#f5bbbb';
     ctx.lineWidth = 3;
     ctx.stroke();
 
-    ctx.save();
-    ctx.translate(p0X, p0Y);
-    ctx.rotate(Math.atan2(p1Y-p0Y, p1X-p0X));
+    ctx.buttonLayer(function() {
+      var angle = Math.atan2(p1Y-p0Y, p1X-p0X);
+      ctx.save();
+      ctx.translate(p0X, p0Y);
+      ctx.rotate(angle);
 
-    var labels = [fmtMoney(m.exp0, 2) + ' weekly growing ' + fmtGrowth(m.expGrowth),
-                  fmtMoney(m.exp0 * weeksPerMonth, 2) + ' monthly growing ' + fmtGrowth(weekToMonthGrowth(m.expGrowth))];
-    ctx.fillStyle = '#000000';
-    ctx.font = '15px Arial';
-    ctx.textAlign = 'left';
-    ctx.textBaseline = 'bottom';
-    _.each(labels, function(label, labeli) {
-      ctx.fillText(label, 20, -4 - 18*(1-labeli));
+      ctx.font = 'bold 15px Arial';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+
+      var label = fmtFlow(m.exp0, m.units, 3, true) + ' expense';
+      var labelW = ctx.measureText(label).width;
+
+      if (0) {
+        ctx.beginPath();
+        drawRountangle(ctx, 10, -8, 20+labelW, 8, 5);
+        ctx.fillStyle='rgba(255,255,255,0.5)';
+        ctx.fill();
+      }
+
+      ctx.fillStyle = '#000000';
+      ctx.fillText(label, 15, 0);
+      ctx.restore();
     });
-    ctx.restore();
 
     hd.add(p0X-lo.dragRad, p0Y-lo.dragRad, p0X+lo.dragRad, p0Y+lo.dragRad, {
       draw: function() {
@@ -535,33 +708,17 @@ function drawOom(m, ctx, hd, lo, o) {
       onHover: function() {
         drawTooltip(ctx, lo, p0X, p0Y, 'Drag to change initial weekly expense');
       }});
-
-    hd.add(p1X-lo.dragRad, p1Y-lo.dragRad, p1X+lo.dragRad, p1Y+lo.dragRad, {
-      draw: function() {
-        drawDragHandle(ctx, p1X, p1Y, lo.dragRad, 'exp');
-      },
-      onDown: function(mdX, mdY) {
-        hd.dragging = function(dragX, dragY) {
-          var newWeek = lo.convXToWeek(dragX);
-          var newExp = lo.convYToFlow(dragY);
-          m.setExpAtWeek(newWeek, newExp);
-          m.everDragged = true;
-        };
-      },
-      onHover: function() {
-        drawTooltip(ctx, lo, p1X, p1Y, 'Drag to change weekly expense growth rate');
-      }});
   }
 
   function drawBreakeven() {
     if (m.breakevenWeek < 0 || m.breakevenWeek > 30*52) return;
 
-    var label = 'Breakeven at ' + fmtYear(m.breakevenWeek);
+    var label = 'Profitable at ' + fmtTime(m.breakevenWeek, 'year', 1);
     var drawArrow = lo.convWeekToX(m.breakevenWeek) > lo.plotR;
     
     if (drawArrow) {
       var p0X = lo.plotR;
-      var p0Y = lo.convFlowToY(m.breakevenFlow);
+      var p0Y = Math.min(lo.convFlowToY(m.breakevenFlow), lo.convFlowToY(m.expN)-10);
       var p1X = lo.plotR-20;
       var p1Y = Math.min(p0Y, lo.convFlowToY(m.expN)-10);
     
@@ -586,7 +743,7 @@ function drawOom(m, ctx, hd, lo, o) {
       var p0X = lo.convWeekToX(m.breakevenWeek);
       var p0Y = lo.convFlowToY(m.breakevenFlow);
       var p1X = lo.convWeekToX(m.breakevenWeek);
-      var p1Y = p0Y+20;
+      var p1Y = p0Y + 20; // lo.plotB;
       
       ctx.moveTo(p0X, p0Y);
       ctx.lineTo(p1X, p1Y);
@@ -600,11 +757,11 @@ function drawOom(m, ctx, hd, lo, o) {
       if (p1X + labelW + 10 > lo.plotR) {
         ctx.textBaseline = 'top';
         ctx.textAlign = 'right';
-        ctx.fillText(label, p1X+3, p1Y);
+        ctx.fillText(label, p1X+3, p1Y+1);
       } else {
         ctx.textBaseline = 'top';
         ctx.textAlign = 'left';
-        ctx.fillText(label, p1X-3, p1Y);
+        ctx.fillText(label, p1X-3, p1Y+1);
       }
     }
   }
@@ -615,7 +772,7 @@ function drawOom(m, ctx, hd, lo, o) {
     var drawArrow = lo.convWeekToX(m.ipoWeek) > lo.plotR;
     var p0X = drawArrow ? lo.plotR : lo.convWeekToX(m.ipoWeek);
     var p0Y = lo.convFlowToY(m.revAtWeek(m.ipoWeek));
-    var label = '$100M/yr revenue at ' + fmtYear(m.ipoWeek);
+    var label = '$100M/yr revenue at ' + fmtTime(m.ipoWeek, 'year', 1);
     var p1X = Math.min(lo.plotR-20, p0X-20);
     var p1Y = p0Y;
     
@@ -637,6 +794,17 @@ function drawOom(m, ctx, hd, lo, o) {
     ctx.textAlign = 'right';
     ctx.fillText(label, p1X-5, p1Y);
   }
+  
+  function drawTitle() {
+    var cX = (lo.plotL + lo.plotR)/2;
+    var lY = lo.boxT + 2;
+    var title = 'Startup Funding Calculator';
+    ctx.font = 'bold 20px Arial';
+    ctx.fillStyle = '#000000';
+    ctx.textBaseline = 'top';
+    ctx.textAlign = 'center';
+    ctx.fillText(title, cX, lY);
+  }
 
   function drawInstructions() {
     if (!(m.showInstructions > 0)) return;
@@ -657,6 +825,7 @@ function drawOom(m, ctx, hd, lo, o) {
       linesW = Math.max(linesW, ctx.measureText(line).width);
     });
 
+    ctx.beginPath();
     drawRountangle(ctx, cX-linesW/2-20, lY-30, cX+linesW/2+20, lY+(lines.length-1)*35+30, 10);
     ctx.fillStyle = '#ffcc66';
     ctx.fill();

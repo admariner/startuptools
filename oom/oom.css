@@ -19,3 +19,12 @@
 
 .oomCanvas {
 }
+
+.oomAbout {
+    width: 650px;
+    margin: 0 auto;
+}
+.oomEmbed {
+    width: 800px;
+    margin: 40px auto;
+}

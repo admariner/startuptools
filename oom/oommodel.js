@@ -10,24 +10,40 @@ exports.OomModel = OomModel;
 
 function OomModel(o) {
   var m = this;
-  m.rev0 = o.rev0 ? o.rev0 : 200;
-  m.revGrowth = o.revGrowth ? o.revGrowth : 0.02;
+  m.units = o.units ? o.units : 'week';   // display units only, everything here is still kept in week units
+  m.rev0 = o.rev0 ? o.rev0 : 100;
+  m.revGrowth = o.revGrowth ? o.revGrowth : 0.025;
   m.exp0 = o.exp0 ? o.exp0 : 1600;
   m.expGrowth = o.expGrowth ? o.expGrowth : 0.0;
 
   m.minFlow = 40;
-  m.maxFlow = 2100000;
-  m.showInstructions = o.rev0 ? 0.0 : 1.0;
-  m.everDragged = o.rev0 ? true : false;
+  m.maxFlow = o.maxFlow ? o.maxFlow : 2100000;
+  m.showInstructions = 0.0;
+  m.everDragged = false;
 
-  m.showWeekly = true;
-  m.showMonthly = true;
-
-  m.nWeeks = 5 * 365.2425 / 7;
+  m.nWeeks = o.duration ? o.duration : 5 * 365.2425 / 7;
   m.calc();
 }
 OomModel.prototype = Object.create(EventEmitter.prototype);
 
+OomModel.prototype.setUnits = function(units) {
+  var m = this;
+  m.units = units;
+  m.calc();
+};
+
+OomModel.prototype.toggleUnits = function() {
+  var m = this;
+  if (m.units === 'week') {
+    return m.setUnits('month');
+  }
+  else if (m.units === 'month') {
+    return m.setUnits('year');
+  }
+  else {
+    return m.setUnits('week');
+  }
+};
 
 /*
   Set revenue/expense at a given time. Supports dragging sliders in the UI.
@@ -117,6 +133,7 @@ OomModel.prototype.calc = function() {
 
   // when will we make 100M / yr?
   m.ipoWeek = (Math.log(1e8/52) - m.rev0Log) / m.revLogGrowth;
+  m.emit('changed');
 };
 
 /*
