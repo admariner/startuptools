@@ -80,7 +80,7 @@ $.defPages('',
              */
              function adjustSizes() {
                var padL = 5, padR = 5;
-               var footerH = 40;
+               var footerH = 70;
                var headerH = 10;
                var mainW = winW - padL - padR;
                var mainH = winH - headerH - footerH - 10;
