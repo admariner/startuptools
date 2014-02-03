@@ -20,7 +20,7 @@ function OomModel(o) {
   m.maxFlow = o.maxFlow ? o.maxFlow : 2100000;
   m.showInstructions = 0.0;
   m.everDragged = false;
-
+  m.uiDebug = false;
   m.nWeeks = o.duration ? o.duration : 5 * 365.2425 / 7;
   m.calc();
 }

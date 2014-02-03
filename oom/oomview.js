@@ -11,7 +11,6 @@ var oommodel            = require('./oommodel');
 $.defPages('', 
            function(rest) {
              var rs = rest.split('_');
-             console.log('Parse', rs);
              return {
                units: rs[0] ? rs[0] : undefined,
                rev0: rs[1] ? parseFloat(rs[1]) : undefined,
@@ -20,24 +19,22 @@ $.defPages('',
                expGrowth: rs[4] ? parseFloat(rs[4]) : undefined,
              };
            },
-           null,
+           (1 ? null : function(o) {
+             return '_' + o.units + '_' + (o.rev0 || 0).toFixed(1) + '_' + (o.exp0 || 0).toFixed(1) + '_' + (o.revGrowth || 0).toFixed(6) + '_' + (o.expGrowth || 0).toFixed(6);
+           }),
            function(o) {
              var top = this;
              var m = new oommodel.OomModel(o);
-             if (0 && !o.rev0) {
-               m.showInstructions = 1.0;
-               m.everDragged = o.rev0 ? true : false;
-             }
 
              var winW, winH;
              console.log('OomModel stored in window.oom0 for your convenience');
              window.oom0 = m;
 
              top.html('<div class="oomView"><canvas class="oomCanvas"></canvas></div>' +
-                      '<div class="oomFooter"></div>');
+                      '<div class="oomBlurb"></div>');
 
              top.find('.oomCanvas').mkAnimatedCanvas(m, drawOom, {});
-             top.find('.oomFooter').fmtOomFooter();
+             top.find('.oomBlurb').fmtOomBlurb();
 
              top.children().first().bogartWindowEvents({
                'resize': onWindowResize,
@@ -122,30 +119,28 @@ $.fn.fmtOomFooter = function(o) {
   return this;
 };
 
+$.fn.fmtOomBlurb = function(o) {
+  this.html('<div class="oomAbout">' +
+            '<p>This tool calculates how much funding your startup needs. Assuming your expenses are '+
+            'constant and your revenue is growing, it shows when you\'ll reach profitability '+
+            'and how much capital you\'ll burn through before then. ' +
+            'Once you\'re profitable, you control your destiny: you can raise more to grow faster if you want.</p>' +
+            '<p>You can drag the red or green handles to set expense, revenue and growth. Geometrically, ' +
+            'the capital needed is the blue-shaded area between the revenue and expense curves.</p>' +
+            '<p>If you raised exactly the amount calculated and everything goes as expected, your bank account '+
+            'would be at $0 the month you hit profitability, which is kind of stressful. So raise a comfortable margin above it.</p>' +
+            '<p>By default it shows weekly rates, but there\'s a button to use monthly or yearly rates. ' +
+            'The code is on <a href="https://www.github.com/tlbtlbtlb/startuptools">github</a> if you\'re curious how it works.</p>' +
+            '</div>' +
+            '<center>' +
+            '<span class="footer">By Trevor Blackwell</span>' +
+            '</center>'
+           );
+}
 
-$.defPage('about', function(o) {
+$.fn.expandOomEmbed = function() {
   var top = this;
-  top.html('<div class="oomAbout">' +
-           '<h1>Startup Funding Calculator</h1>' +
-           '<p>This tool calculates how much funding your startup needs. Assuming your expenses are '+
-           'constant and your revenue is growing, it displays when you\'ll reach profitability '+
-           'and how much capital you\'ll burn through before then.</p>' +
-           '<p>Geometrically, the capital needed is the area between the revenue and expense curve.</p>' +
-           '<p>You should raise somewhat more capital than the number given here. If you raised ' +
-           'exactly the amount given and if everything goes as well as expected, your bank account '+
-           'would be at $0 the month you hit profitability, which is kind of stressful. So raise some extra buffer.</p>' +
-           '<p>Try it out below or use the <a href="#_">full page version</a>! You can drag the red or green handles to set expense, revenue and growth.</p>' +
-           '</div>' +
-           '<div class="oomEmbed" modelOpts="{&quot;duration&quot;:261,&quot;revGrowth&quot;:0.015,&quot;maxFlow&quot;:3e5}"></div>' +
-           '<div class="oomAbout">' +
-           '<p>By default it shows weekly rates, but there\'s a button to use monthly or yearly rates. ' +
-           'If you use the <a href="#_">full page</a> version, you can email links including the current numbers. ' +
-           'The code is on <a href="https://www.github.com/tlbtlbtlb/startuptools">github</a> if you\'re curious how it works.</p>' +
-           '</div>' +
-           '<center>' +
-           '<span class="footer">By Trevor Blackwell</span>' +
-           '</center>'
-          );
+  // Example: <div class="oomEmbed" modelOpts="{&quot;duration&quot;:261,&quot;revGrowth&quot;:0.015,&quot;maxFlow&quot;:3e5}">
 
   top.find('.oomEmbed').each(function(el) {
     var embed = $(this);
@@ -153,7 +148,7 @@ $.defPage('about', function(o) {
     console.log(modelOpts);
     embed.fmtOomEmbed(modelOpts);
   });
-});
+};
 
 /*
   Formatters
