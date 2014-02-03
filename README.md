@@ -1,6 +1,3 @@
-Startup Tools
-============
-
 Startup Funding Calculator
 ==
 
