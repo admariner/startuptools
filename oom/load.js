@@ -9,6 +9,6 @@ function load(webServer) {
   p.addScript(require.resolve('./oommodel.js'), './oommodel');
   p.addScript(require.resolve('./oomview.js'), './oomview');
 
-  p.setTitle('Don\'t Run Out of Money');
-  webServer.setUrl('/drom', p);
+  p.setTitle('Startup Funding Calculator');
+  webServer.setUrl('/sfc', p);
 }
