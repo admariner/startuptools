@@ -10,7 +10,7 @@ exports.OomModel = OomModel;
 
 function OomModel(o) {
   var m = this;
-  m.units = o.units ? o.units : 'week';   // display units only, everything here is still kept in week units
+  m.units = (o.units === 'week' || o.units === 'month' || o.units === 'year') ? o.units : 'week';   // display units only, everything here is still kept in week units
   m.rev0 = o.rev0 ? o.rev0 : 100;
   m.revGrowth = o.revGrowth ? o.revGrowth : 0.025;
   m.exp0 = o.exp0 ? o.exp0 : 1600;

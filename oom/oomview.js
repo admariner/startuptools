@@ -134,7 +134,7 @@ $.defPage('about', function(o) {
            '<p>You should raise somewhat more capital than the number given here. If you raised ' +
            'exactly the amount given and if everything goes as well as expected, your bank account '+
            'would be at $0 the month you hit profitability, which is kind of stressful. So raise some extra buffer.</p>' +
-           '<p>Try it out below! You can drag the red or green handles to set expense, revenue and growth.</p>' +
+           '<p>Try it out below or use the <a href="#_">full page version</a>! You can drag the red or green handles to set expense, revenue and growth.</p>' +
            '</div>' +
            '<div class="oomEmbed" modelOpts="{&quot;duration&quot;:261,&quot;revGrowth&quot;:0.015,&quot;maxFlow&quot;:3e5}"></div>' +
            '<div class="oomAbout">' +
