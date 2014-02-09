@@ -10,5 +10,6 @@ function load(webServer) {
   p.addScript(require.resolve('./oomview.js'), './oomview');
 
   p.setTitle('Startup Funding Calculator');
-  webServer.setUrl('/sfc', p);
+  webServer.setPrefixHosts('/sfc/', ['sfc.mechanical.ly', 'sfc.tlb.org']);
+  webServer.setUrl('/sfc/', p);
 }
