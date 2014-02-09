@@ -10,7 +10,7 @@ exports.OomModel = OomModel;
 
 function OomModel(o) {
   var m = this;
-  m.units = (o.units === 'week' || o.units === 'month' || o.units === 'year') ? o.units : 'week';   // display units only, everything here is still kept in week units
+  m.units = _.limitToSelection(['week', 'month', 'year'], o.units);   // display units only, everything here is still kept in week units
   m.rev0 = o.rev0 ? o.rev0 : 100;
   m.revGrowth = o.revGrowth ? o.revGrowth : 0.025;
   m.exp0 = o.exp0 ? o.exp0 : 1600;
@@ -20,7 +20,7 @@ function OomModel(o) {
   m.maxFlow = o.maxFlow ? o.maxFlow : 2100000;
   m.showInstructions = 0.0;
   m.everDragged = false;
-  m.uiDebug = false;
+  m.uiDebug = !!o.uiDebug;
   m.nWeeks = o.duration ? o.duration : 5 * 365.2425 / 7;
   m.calc();
 }
@@ -52,7 +52,7 @@ OomModel.prototype.toggleUnits = function() {
 OomModel.prototype.setRevAtWeek = function(week, rev) {
   var m = this;
   if (week === 0) {
-    m.rev0 = rev;
+    m.rev0 = Math.round(rev);
   } else {
     m.revGrowth = Math.exp(Math.log(rev / m.rev0) / week) - 1;
   }
@@ -61,7 +61,7 @@ OomModel.prototype.setRevAtWeek = function(week, rev) {
 OomModel.prototype.setExpAtWeek = function(week, exp) {
   var m = this;
   if (week === 0) {
-    m.exp0 = exp;
+    m.exp0 = Math.round(exp);
   } else {
     m.expGrowth = Math.exp(Math.log(exp / m.exp0) / week) - 1;
   }

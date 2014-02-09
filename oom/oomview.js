@@ -8,97 +8,95 @@
 
 var oommodel            = require('./oommodel');
 
-$.defPages('', 
-           function(rest) {
-             var rs = rest.split('_');
-             return {
-               units: rs[0] ? rs[0] : undefined,
-               rev0: rs[1] ? parseFloat(rs[1]) : undefined,
-               exp0: rs[2] ? parseFloat(rs[2]) : undefined,
-               revGrowth: rs[3] ? parseFloat(rs[3]) : undefined,
-               expGrowth: rs[4] ? parseFloat(rs[4]) : undefined,
-             };
-           },
-           (1 ? null : function(o) {
-             return '_' + o.units + '_' + (o.rev0 || 0).toFixed(1) + '_' + (o.exp0 || 0).toFixed(1) + '_' + (o.revGrowth || 0).toFixed(6) + '_' + (o.expGrowth || 0).toFixed(6);
-           }),
-           function(o) {
-             var top = this;
-             var m = new oommodel.OomModel(o);
+$.defPage('', 
+          function(o) {
+            var top = this;
+            var m = new oommodel.OomModel(o);
 
-             var winW, winH;
-             console.log('OomModel stored in window.oom0 for your convenience');
-             window.oom0 = m;
+            var winW, winH;
+            console.log('OomModel stored in window.oom0 for your convenience');
+            window.oom0 = m;
 
-             top.html('<div class="oomView"><canvas class="oomCanvas"></canvas></div>' +
-                      '<div class="oomBlurb"></div>');
+            top.html('<div class="oomView"><canvas class="oomCanvas"></canvas></div>' +
+                     '<div class="oomBlurb"></div>');
 
-             top.find('.oomCanvas').mkAnimatedCanvas(m, drawOom, {});
-             top.find('.oomBlurb').fmtOomBlurb();
+            top.find('.oomCanvas').mkAnimatedCanvas(m, drawOom, {});
+            top.find('.oomBlurb').fmtOomBlurb();
 
-             top.children().first().bogartWindowEvents({
-               'resize': onWindowResize,
-               'keydown': onWindowKeydown
-             });
+            top.children().first().bogartWindowEvents({
+              'resize': onWindowResize,
+              'keydown': onWindowKeydown
+            });
 
-             m.on('changed', function() {
-               top.setHash('_' + m.units + '_' + m.rev0.toFixed(1) + '_' + m.exp0.toFixed(1) + '_' + m.revGrowth.toFixed(6) + '_' + m.expGrowth.toFixed(6));
-             });
+            m.on('changed', function() {
+              replaceLocationHash('', {
+                units: m.units,
+                uiDebug: m.uiDebug ? true : undefined,
+                rev0: m.rev0,
+                exp0: m.exp0,
+                revGrowth: m.revGrowth,
+                expGrowth: m.expGrowth
+              });
+            });
 
-             getSizes();
-             adjustSizes();
-             top.animation2(m);
-             m.emit('changed');
-             return this;
+            getSizes();
+            adjustSizes();
+            top.animation2(m);
+            m.emit('changed');
+            return this;
 
-             function onWindowKeydown(ev) {
-               if (ev.which === 87) { // W
-                 m.setUnits('week');
-               }
-               else if (ev.which === 77) { // M
-                 m.setUnits('month');
-               }
-               else if (ev.which === 89) { // Y
-                 m.setUnits('year');
-               }
-             }
+            function onWindowKeydown(ev) {
+              if ($('#popupEditUrl').length) return; // argh
+              if (ev.ctrlKey && !ev.metaKey && !ev.altKey && !ev.shiftKey && ev.which === 87) { // W
+                m.setUnits('week');
+                return false;
+              }
+              else if (ev.ctrlKey && !ev.metaKey && !ev.altKey && !ev.shiftKey && ev.which === 77) { // M
+                m.setUnits('month');
+                return false;
+              }
+              else if (ev.ctrlKey && !ev.metaKey && !ev.altKey && !ev.shiftKey && ev.which === 89) { // Y
+                m.setUnits('year');
+                return false;
+              }
+            }
 
-             function onWindowResize(ev) {
-               if (top.find('.oomCanvas').length === 0) return false;
-               if (getSizes()) adjustSizes();
-             }
+            function onWindowResize(ev) {
+              if (top.find('.oomCanvas').length === 0) return false;
+              if (getSizes()) adjustSizes();
+            }
 
-             function getSizes() {
-               var oldWinW = winW, oldWinH = winH;
-               winW = Math.max(500, $(window).width());
-               winH = Math.max(400, $(window).height());
-               return (winW !== oldWinW || winH !== oldWinH);
-             }
-             
-             /*
-               Because I can't figure out how to make full-page layouts in CSS.
-             */
-             function adjustSizes() {
-               var padL = 5, padR = 5;
-               var footerH = 70;
-               var headerH = 10;
-               var mainW = winW - padL - padR;
-               var mainH = winH - headerH - footerH - 10;
-               top.find('.oomView').each(function() {
-                 $(this).css({
-                   width: (mainW).toString() + 'px', 
-                   height: (mainH).toString() + 'px',
-                   left: (padL).toString() + 'px',
-                   top: (headerH).toString() + 'px'
-                 });
-                 var canvas = $(this).find('.oomCanvas')[0];
-                 canvas.height = mainH;
-                 canvas.width = mainW;
-                 $(this).maximizeCanvasResolution();
-                 m.emit('changed');
-               });
-             }
-           });
+            function getSizes() {
+              var oldWinW = winW, oldWinH = winH;
+              winW = Math.max(500, $(window).width());
+              winH = Math.max(400, $(window).height());
+              return (winW !== oldWinW || winH !== oldWinH);
+            }
+            
+            /*
+              Because I can't figure out how to make full-page layouts in CSS.
+            */
+            function adjustSizes() {
+              var padL = 5, padR = 5;
+              var footerH = 70;
+              var headerH = 10;
+              var mainW = winW - padL - padR;
+              var mainH = winH - headerH - footerH - 10;
+              top.find('.oomView').each(function() {
+                $(this).css({
+                  width: (mainW).toString() + 'px', 
+                  height: (mainH).toString() + 'px',
+                  left: (padL).toString() + 'px',
+                  top: (headerH).toString() + 'px'
+                });
+                var canvas = $(this).find('.oomCanvas')[0];
+                canvas.height = mainH;
+                canvas.width = mainW;
+                $(this).maximizeCanvasResolution();
+                m.emit('changed');
+              });
+            }
+          });
 
 $.fn.fmtOomEmbed = function(o) {
   var top = this;
@@ -310,8 +308,8 @@ function drawDragHandle(ctx, cX, cY, radius, style) {
 
   ctx.lineWidth = radius/4;
   switch(style) {
-  case 'exp': ctx.fillStyle = mkShinyPattern(ctx, cX-radius, cY-radius, cX+radius, cY+radius, '#b20000', '#ff0000'); break;
-  case 'rev': ctx.fillStyle = mkShinyPattern(ctx, cX-radius, cY-radius, cX+radius, cY+radius, '#008e00', '#00cc00'); break;
+  case 'exp': ctx.fillStyle = mkShinyPattern(ctx, cY-radius, cX+radius, cY+radius, cX-radius, '#b20000', '#ff0000'); break;
+  case 'rev': ctx.fillStyle = mkShinyPattern(ctx, cY-radius, cX+radius, cY+radius, cX-radius, '#008e00', '#00cc00'); break;
   }
   ctx.arc(cX, cY, radius, 0, Math.PI*2);
   ctx.fill();
@@ -465,7 +463,7 @@ function drawOom(m, ctx, hd, lo, o) {
     ctx.textBaseline = 'bottom';
     var label = 'change';
     var labelW = ctx.measureText(label).width;
-    hd.add(lo.plotL, lo.plotT-20, lo.plotL+labelW+10, lo.plotT-5, {
+    hd.add(lo.plotT-20, lo.plotL+labelW+10, lo.plotT-5, lo.plotL, {
       drawCustom: function(hover) {
         if (hover) {
           ctx.fillStyle = '#ee0000';
@@ -497,7 +495,7 @@ function drawOom(m, ctx, hd, lo, o) {
 
       if (1) {
         var pat = ctx.createLinearGradient(lo.plotL, lo.plotB, lo.plotL, lo.plotT);
-        pat.addColorStop(0.0, 'rgba(200,200,255,0.0)');
+        pat.addColorStop(0.0, 'rgba(200,200,255,0.3)');
         pat.addColorStop(1.0, 'rgba(200,200,255,0.9)');
         ctx.fillStyle = pat;
       } else {
@@ -618,7 +616,7 @@ function drawOom(m, ctx, hd, lo, o) {
       ctx.restore();
     });
 
-    hd.add(p0X-lo.dragRad, p0Y-lo.dragRad, p0X+lo.dragRad, p0Y+lo.dragRad, {
+    hd.add(p0Y-lo.dragRad, p0X+lo.dragRad, p0Y+lo.dragRad, p0X-lo.dragRad, {
       draw: function() {
         drawDragHandle(ctx, p0X, p0Y, lo.dragRad, 'rev');
       },
@@ -633,7 +631,7 @@ function drawOom(m, ctx, hd, lo, o) {
         drawTooltip(ctx, lo, p0X, p0Y, 'Drag to change initial weekly revense');
       }});
 
-    hd.add(pmX-lo.dragRad, pmY-lo.dragRad, pmX+lo.dragRad, pmY+lo.dragRad, {
+    hd.add(pmY-lo.dragRad, pmX+lo.dragRad, pmY+lo.dragRad, pmX-lo.dragRad, {
       draw: function() {
         drawDragHandle(ctx, pmX, pmY, lo.dragRad, 'rev');
       }, 
@@ -679,7 +677,7 @@ function drawOom(m, ctx, hd, lo, o) {
 
       if (0) {
         ctx.beginPath();
-        drawRountangle(ctx, 10, -8, 20+labelW, 8, 5);
+        drawRountangle(ctx, -8, 20+labelW, 8, 10, 5);
         ctx.fillStyle='rgba(255,255,255,0.5)';
         ctx.fill();
       }
@@ -689,7 +687,7 @@ function drawOom(m, ctx, hd, lo, o) {
       ctx.restore();
     });
 
-    hd.add(p0X-lo.dragRad, p0Y-lo.dragRad, p0X+lo.dragRad, p0Y+lo.dragRad, {
+    hd.add(p0Y-lo.dragRad, p0X+lo.dragRad, p0Y+lo.dragRad, p0X-lo.dragRad, {
       draw: function() {
         drawDragHandle(ctx, p0X, p0Y, lo.dragRad, 'exp');
       },
@@ -793,7 +791,7 @@ function drawOom(m, ctx, hd, lo, o) {
   function drawTitle() {
     var cX = (lo.plotL + lo.plotR)/2;
     var lY = lo.boxT + 2;
-    var title = 'Startup Funding Calculator';
+    var title = 'Startup Growth Calculator';
     ctx.font = 'bold 20px Arial';
     ctx.fillStyle = '#000000';
     ctx.textBaseline = 'top';
@@ -821,7 +819,7 @@ function drawOom(m, ctx, hd, lo, o) {
     });
 
     ctx.beginPath();
-    drawRountangle(ctx, cX-linesW/2-20, lY-30, cX+linesW/2+20, lY+(lines.length-1)*35+30, 10);
+    drawRountangle(ctx, lY-30, cX+linesW/2+20, lY+(lines.length-1)*35+30, cX-linesW/2-20, 10);
     ctx.fillStyle = '#ffcc66';
     ctx.fill();
 
