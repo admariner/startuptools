@@ -7,6 +7,6 @@ test:
 
 
 deploy:
-	git commit -am 'deploy';
+	git commit -am 'deploy' || echo commit failed
 	git push deploy master
 	cd tlbcore && make deploy
