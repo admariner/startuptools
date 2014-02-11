@@ -24,38 +24,32 @@ $.defPage('',
             top.find('.oomBlurb').fmtOomBlurb();
 
             top.children().first().bogartWindowEvents({
-              'resize': onWindowResize,
-              'keydown': onWindowKeydown
+              'resize': onWindowResize
+            }).bogartBodyEvents({
+              'keydown': onBodyKeydown
             });
 
             m.on('changed', function() {
-              replaceLocationHash('', {
-                units: m.units,
-                uiDebug: m.uiDebug ? true : undefined,
-                rev0: m.rev0,
-                exp0: m.exp0,
-                revGrowth: m.revGrowth,
-                expGrowth: m.expGrowth
-              });
+              replaceLocationHash('', m.asParms());
             });
-
+            
             getSizes();
             adjustSizes();
             top.animation2(m);
             m.emit('changed');
             return this;
 
-            function onWindowKeydown(ev) {
-              if ($('#popupEditUrl').length) return; // argh
-              if (ev.ctrlKey && !ev.metaKey && !ev.altKey && !ev.shiftKey && ev.which === 87) { // W
+            function onBodyKeydown(ev) {
+              if ($('#popupEditUrl').length) return; // argh. 
+              if (ev.ctrlKey && !ev.metaKey && !ev.altKey && !ev.shiftKey && ev.which === 87) { // C-W
                 m.setUnits('week');
                 return false;
               }
-              else if (ev.ctrlKey && !ev.metaKey && !ev.altKey && !ev.shiftKey && ev.which === 77) { // M
+              else if (ev.ctrlKey && !ev.metaKey && !ev.altKey && !ev.shiftKey && ev.which === 77) { // C-M
                 m.setUnits('month');
                 return false;
               }
-              else if (ev.ctrlKey && !ev.metaKey && !ev.altKey && !ev.shiftKey && ev.which === 89) { // Y
+              else if (ev.ctrlKey && !ev.metaKey && !ev.altKey && !ev.shiftKey && ev.which === 89) { // C-Y
                 m.setUnits('year');
                 return false;
               }

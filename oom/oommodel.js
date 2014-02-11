@@ -22,9 +22,23 @@ function OomModel(o) {
   m.everDragged = false;
   m.uiDebug = !!o.uiDebug;
   m.nWeeks = o.duration ? o.duration : 5 * 365.2425 / 7;
+  m.dummy = o.dummy;
   m.calc();
 }
 OomModel.prototype = Object.create(EventEmitter.prototype);
+
+OomModel.prototype.asParms = function() {
+  var m = this;
+  return {
+    units: m.units,
+    uiDebug: m.uiDebug ? true : undefined,
+    rev0: m.rev0,
+    exp0: m.exp0,
+    revGrowth: m.revGrowth,
+    expGrowth: m.expGrowth,
+    dummy: m.dummy
+  }
+};
 
 OomModel.prototype.setUnits = function(units) {
   var m = this;
