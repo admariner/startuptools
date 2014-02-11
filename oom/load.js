@@ -19,6 +19,7 @@ function load(webServer) {
   }
 
   p.setTitle('Startup Funding Calculator');
+  webServer.setupStdContent('/sfc/');
   webServer.setPrefixHosts('/sfc/', ['sfc.mechanical.ly', 'sfc.tlb.org']);
   webServer.setUrl('/sfc/', p);
 }
