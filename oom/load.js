@@ -18,8 +18,8 @@ function load(webServer) {
     p.addScript(require.resolve('../tlbcore/web/VjsEditUrl.js'));
   }
 
-  p.setTitle('Startup Funding Calculator');
-  webServer.setupStdContent('/sfc/');
-  webServer.setPrefixHosts('/sfc/', ['sfc.mechanical.ly', 'sfc.tlb.org']);
-  webServer.setUrl('/sfc/', p);
+  p.setTitle('Startup Growth Calculator');
+  webServer.setupStdContent('/growth/');
+  webServer.setPrefixHosts('/growth/', ['growth.tlb.org']);
+  webServer.setUrl('/growth/', p);
 }
