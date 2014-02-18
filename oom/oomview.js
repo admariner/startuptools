@@ -4,6 +4,8 @@
   The actual math is in oommodel.js
 
   See tlbcore doc for $.defPages, $.mkAnimatedCanvas
+
+  Reference [Don’t be the startup that accidentally runs out of money](https://news.ycombinator.com/item?id=7239975)
 */
 
 var oommodel            = require('./oommodel');
