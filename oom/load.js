@@ -20,6 +20,8 @@ function load(webServer) {
 
   p.setTitle('Startup Growth Calculator');
   webServer.setupStdContent('/growth/');
-  webServer.setPrefixHosts('/growth/', ['growth.tlb.org']);
+  webServer.setPrefixHosts('/growth/', [
+    'growth.tlb.org',
+  ]);
   webServer.setUrl('/growth/', p);
 }
