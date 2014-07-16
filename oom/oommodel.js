@@ -21,7 +21,7 @@ function OomModel(o) {
   m.showInstructions = 0.0;
   m.everDragged = false;
   m.uiDebug = !!o.uiDebug;
-  m.nWeeks = o.duration ? o.duration : 5 * 365.2425 / 7;
+  m.nWeeks = o.duration ? o.duration : 3 * 365.2425 / 7;
   m.dummy = o.dummy;
   m.calc();
 }

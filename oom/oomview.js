@@ -363,7 +363,7 @@ function drawOom(m, ctx, hd, lo, o) {
       Leave some margins around the plot for axis labels etc.
      */
     lo.labelW = 60;
-    lo.plotL = lo.boxL + 5 + lo.labelW;
+    lo.plotL = lo.boxL + 0.25*(lo.boxR-lo.boxL) + 5 + lo.labelW;
     lo.plotR = lo.boxR - 20;
     lo.plotT = lo.boxT + 45;
     lo.plotB = lo.boxB - 30;
@@ -549,6 +549,7 @@ function drawOom(m, ctx, hd, lo, o) {
         ctx.fillText(label, protRad+12, 0);
         ctx.restore();
       });
+      maxAngle -= 0.03;  // radians
       ctx.beginPath();
       if (0) ctx.moveTo(p0X + protRad*0.5, p0Y);
       ctx.arc(p0X, p0Y, protRad, 0, maxAngle, true);
@@ -624,7 +625,7 @@ function drawOom(m, ctx, hd, lo, o) {
         };
       },
       onHover: function() {
-        drawTooltip(ctx, lo, p0X, p0Y, 'Drag to change initial weekly revense');
+        drawTooltip(ctx, lo, p0X, p0Y, 'Drag to change initial revenue');
       }});
 
     hd.add(pmY-lo.dragRad, pmX+lo.dragRad, pmY+lo.dragRad, pmX-lo.dragRad, {
@@ -640,7 +641,7 @@ function drawOom(m, ctx, hd, lo, o) {
         };
       }, 
       onHover: function() {
-        drawTooltip(ctx, lo, pmX, pmY, 'Drag to change weekly revense growth rate');
+        drawTooltip(ctx, lo, pmX, pmY, 'Drag to change revenue growth rate');
       }});
   }
 
@@ -695,7 +696,7 @@ function drawOom(m, ctx, hd, lo, o) {
         };
       },
       onHover: function() {
-        drawTooltip(ctx, lo, p0X, p0Y, 'Drag to change initial weekly expense');
+        drawTooltip(ctx, lo, p0X, p0Y, 'Drag to change initial expense');
       }});
   }
 
