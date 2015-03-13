@@ -8,21 +8,36 @@ exports.OomModel = OomModel;
 
 */
 
+var oomDefaults = {
+  units: 'week',
+  uiDebug: false,
+  nWeeks: Math.round(3 * 365.2425 / 7),
+  minFlow: 40,
+  maxFlow: 2100000,
+  rev0: 100,
+  revGrowth: 0.025,
+  exp0: 1600,
+  expGrowth: 0.0
+};
+
 function OomModel(o) {
   var m = this;
-  m.units = _.limitToSelection(['week', 'month', 'year'], o.units);   // display units only, everything here is still kept in week units
-  m.rev0 = o.rev0 ? o.rev0 : 100;
-  m.revGrowth = o.revGrowth ? o.revGrowth : 0.025;
-  m.exp0 = o.exp0 ? o.exp0 : 1600;
-  m.expGrowth = o.expGrowth ? o.expGrowth : 0.0;
 
-  m.minFlow = 40;
-  m.maxFlow = o.maxFlow ? o.maxFlow : 2100000;
+  m.units = _.limitToSelection(['week', 'month', 'year'], o.units);   // display units only, everything here is still kept in week units
+  m.uiDebug = !!o.uiDebug;
+
+  m.rev0 = o.rev0 ? o.rev0 : oomDefaults.rev0;
+  m.revGrowth = o.revGrowth ? o.revGrowth : oomDefaults.revGrowth;
+  m.exp0 = o.exp0 ? o.exp0 : oomDefaults.exp0;
+  m.expGrowth = o.expGrowth ? o.expGrowth : oomDefaults.expGrowth;
+
+  m.minFlow = o.minFlow ? o.minFlow : oomDefaults.minFlow;
+  m.maxFlow = o.maxFlow ? o.maxFlow : oomDefaults.maxFlow;
+  m.nWeeks = o.nWeeks ? o.nWeeks : oomDefaults.nWeeks;
+
   m.showInstructions = 0.0;
   m.everDragged = false;
-  m.uiDebug = !!o.uiDebug;
-  m.nWeeks = o.duration ? o.duration : 3 * 365.2425 / 7;
-  m.dummy = o.dummy;
+
   m.calc();
 }
 OomModel.prototype = Object.create(EventEmitter.prototype);
@@ -30,13 +45,15 @@ OomModel.prototype = Object.create(EventEmitter.prototype);
 OomModel.prototype.asParms = function() {
   var m = this;
   return {
-    units: m.units,
-    uiDebug: m.uiDebug ? true : undefined,
-    rev0: m.rev0,
-    exp0: m.exp0,
-    revGrowth: m.revGrowth,
-    expGrowth: m.expGrowth,
-    dummy: m.dummy
+    units: (m.units !== oomDefaults.units) ? m.units : undefined,
+    uiDebug: (m.uiDebug !== oomDefaults.uiDebug) ? true : undefined,
+    rev0: (m.rev0 !== oomDefaults.rev0) ? m.rev0 : undefined,
+    exp0: (m.exp0 !== oomDefaults.exp0) ? m.exp0 : undefined,
+    revGrowth: (m.revGrowth !== oomDefaults.revGrowth) ? m.revGrowth : undefined,
+    expGrowth: (m.expGrowth !== oomDefaults.expGrowth) ? m.expGrowth : undefined,
+    minFlow: (m.minFlow !== oomDefaults.minFlow) ? m.minFlow : undefined,
+    maxFlow: (m.maxFlow !== oomDefaults.maxFlow) ? m.maxFlow : undefined,
+    nWeeks: (m.nWeeks !== oomDefaults.nWeeks) ? m.nWeeks : undefined
   }
 };
 
