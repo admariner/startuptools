@@ -9,6 +9,7 @@
 */
 
 var oommodel            = require('./oommodel');
+var _                   = require('lodash');
 
 $.defPage('', 
           function(o) {
@@ -30,10 +31,10 @@ $.defPage('',
             }).bogartBodyEvents({
               'keydown': onBodyKeydown
             });
-
-            m.on('changed', function() {
+  
+            m.on('changed', _.debounce(function() { // Debouncing to avoid calling replaceHistory too often
               replaceLocationHash('', m.asParms());
-            });
+            }, 500));
             
             getSizes();
             adjustSizes();
